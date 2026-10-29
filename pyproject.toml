@@ -1,0 +1,71 @@
+# Documentation de poetry: https://python-poetry.org/docs/pyproject/
+
+[tool.poetry]
+name = "eoqual-deconvolution"
+version = "0.1.0"
+description = "Image deconvolution methods for Earth observation"
+authors = ["Olivier Amram <olivier.amram@free.fr>"]
+maintainers = [
+    "Olivier Amram <olivier.amram@free.fr>"
+]
+repository = "https://github.com/EOQual/eoqual-deconvolution.git"
+readme = "README.md"
+license = "MIT"
+keywords = ["deconvolution", "deblurring", "remote-sensing", "image", "earth-observation"]
+packages = [{include = "eoqual/deconvolution", from = "src"}]
+include = ["src/eoqual/deconvolution/tuning/spaces/*.jsonc"]
+exclude = [
+    "**/__pycache__",
+    "**/.DS_Store",
+]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<4.0"
+# Briques communes (kernel, noise, psf, fourier), épinglées sur une
+# version : voir les règles de stabilité d'eoqual-core.
+eoqual-core = {git = "https://github.com/EOQual/eoqual-core.git", tag = "v0.2.0"}
+# Métriques (PSNR, SSIM, indice de netteté SI) : réglage et benchmark.
+eoqual-metrics = {git = "https://github.com/EOQual/eoqual-metrics.git", tag = "v1.2.1"}
+# Figures Plotly génériques (galerie, courbes).
+eoqual-viz = {git = "https://github.com/EOQual/eoqual-viz.git", tag = "v0.2.0"}
+numpy = "*"
+scipy = "*"
+# scikit-image : Wiener non supervisé (Orieux et al. 2010).
+scikit-image = "*"
+# PyWavelets : FISTA sur ondelettes.
+pywavelets = "*"
+plotly = "*"
+rich = "*"
+
+# --- Extra "pnp" : débruiteurs d'eoqual-denoising (MIT) pour Plug-and-Play ---
+eoqual-denoising = {git = "https://github.com/EOQual/eoqual-denoising.git", tag = "v0.1.0", optional = true}
+# --- Extra "deep" : débruiteurs à réseau (DRUNet...) via eoqual-denoising ---
+# deepinv et ses poids DRUNet : BSD-3-Clause. Dépendance lourde (PyTorch).
+torch = {version = ">=2.2", optional = true}
+deepinv = {version = "*", optional = true}
+einops = {version = "*", optional = true}
+# --- Extra "optim" : optimisation bayésienne des paramètres ---
+# scikit-optimize : BSD-3-Clause (versions 0.10.x publiées par une fourche).
+scikit-optimize = {version = ">=0.10", optional = true}
+
+[tool.poetry.extras]
+pnp = ["eoqual-denoising"]
+deep = ["eoqual-denoising", "torch", "deepinv", "einops"]
+optim = ["scikit-optimize"]
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "*"
+sphinx-rtd-theme = "*"
+sphinx-autoapi = "*"
+
+[tool.poetry.group.dev.dependencies]
+poetry = "^2.1.1"
+ipython = "^8.8.0"
+black = "^23.3.0"
+coverage = "^6.5.0"
+pylint = "*"
+pytest = "<9"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

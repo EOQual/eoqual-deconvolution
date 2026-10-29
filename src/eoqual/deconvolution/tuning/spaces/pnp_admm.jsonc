@@ -1,0 +1,9 @@
+{
+  // Espace de recherche de « pnp_admm » (débruiteur par défaut : nl_ridge).
+  "search_space": [
+    {"name": "lam", "type": "float", "low": 0.02, "high": 2.0, "prior": "log-uniform"},
+    {"name": "sigma_start", "type": "float", "low": 0.03, "high": 0.4, "prior": "log-uniform"},
+    {"name": "n_iter", "type": "int", "low": 6, "high": 24},
+  ],
+  "initial_guess": {"lam": 0.5, "sigma_start": 0.2, "n_iter": 12},
+}

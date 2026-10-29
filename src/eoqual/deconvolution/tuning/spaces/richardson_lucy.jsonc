@@ -1,0 +1,10 @@
+{
+  // Espace de recherche de « richardson_lucy ». Le nombre d'itérations régularise.
+  "search_space": [
+    {"name": "n_iter", "type": "int", "low": 3, "high": 150, "prior": "log-uniform"},
+    // Poids TV (Dey et al. 2006), sans dimension ; 0 : RL pur.
+    {"name": "tv_weight", "type": "float", "low": 0.0, "high": 0.02},
+  ],
+  "initial_guess": {"n_iter": 12, "tv_weight": 0.0},
+  "fixed": {"acceleration": true},
+}

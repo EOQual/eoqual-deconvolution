@@ -1,0 +1,7 @@
+{
+  // Espace de recherche de « inverse » : seuil sur |H|.
+  "search_space": [
+    {"name": "threshold", "type": "float", "low": 0.005, "high": 0.5, "prior": "log-uniform"},
+  ],
+  "initial_guess": {"threshold": 0.05},
+}

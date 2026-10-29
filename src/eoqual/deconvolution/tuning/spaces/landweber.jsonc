@@ -1,0 +1,8 @@
+{
+  // Espace de recherche de « landweber ». Le nombre d'itérations régularise.
+  "search_space": [
+    {"name": "n_iter", "type": "int", "low": 5, "high": 500, "prior": "log-uniform"},
+  ],
+  "initial_guess": {"n_iter": 30},
+  "fixed": {"stop_at_discrepancy": false},
+}

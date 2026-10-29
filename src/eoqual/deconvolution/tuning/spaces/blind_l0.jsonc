@@ -1,0 +1,9 @@
+{
+  // Espace de recherche de « blind_l0 ». La PSF n'est pas connue : préférer
+  // le critère sans référence (metric="sharpness_index") sur une image réelle.
+  "search_space": [
+    {"name": "lam_l0", "type": "float", "low": 2e-3, "high": 5e-2, "prior": "log-uniform"},
+    {"name": "lam", "type": "float", "low": 0.1, "high": 2.0, "prior": "log-uniform"},
+  ],
+  "initial_guess": {"lam_l0": 4e-3, "lam": 0.4},
+}

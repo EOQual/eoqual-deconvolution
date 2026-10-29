@@ -1,0 +1,8 @@
+{
+  // Espace de recherche de « tv_primal_dual ». lam en multiples de σ.
+  "search_space": [
+    {"name": "lam", "type": "float", "low": 0.01, "high": 1.0, "prior": "log-uniform"},
+  ],
+  "initial_guess": {"lam": 0.1},
+  "fixed": {"n_iter": 300},
+}

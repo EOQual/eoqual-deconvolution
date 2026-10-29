@@ -1,0 +1,11 @@
+{
+  // Espace de recherche de « wiener » — chargé par tuning/search_spaces.py.
+  // Filtre de Wiener à spectre du signal en loi de puissance |ω|^-β.
+  "search_space": [
+    // Exposant du spectre du signal (≈ 2 pour une image naturelle).
+    {"name": "beta", "type": "float", "low": 1.0, "high": 4.0},
+    // Facteur sur σ transmis (σ mal connu, bruit corrélé).
+    {"name": "sigma_scale", "type": "float", "low": 0.5, "high": 2.0, "prior": "log-uniform"},
+  ],
+  "initial_guess": {"beta": 2.0, "sigma_scale": 1.0},
+}

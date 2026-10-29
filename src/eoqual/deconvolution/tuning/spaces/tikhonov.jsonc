@@ -1,0 +1,8 @@
+{
+  // Espace de recherche de « tikhonov ». λ sans dimension, sur plusieurs décades.
+  "search_space": [
+    {"name": "lam", "type": "float", "low": 1e-5, "high": 1.0, "prior": "log-uniform"},
+    {"name": "regularizer", "type": "categorical", "categories": ["identity", "gradient", "laplacian"]},
+  ],
+  "initial_guess": {"lam": 1e-2, "regularizer": "laplacian"},
+}

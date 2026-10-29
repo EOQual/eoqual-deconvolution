@@ -1,0 +1,10 @@
+{
+  // Espace de recherche de « fista_wavelet ». lam en multiples de σ.
+  "search_space": [
+    {"name": "lam", "type": "float", "low": 0.02, "high": 1.5, "prior": "log-uniform"},
+    {"name": "levels", "type": "int", "low": 2, "high": 5},
+    {"name": "wavelet", "type": "categorical", "categories": ["db2", "db4", "sym8"]},
+  ],
+  "initial_guess": {"lam": 0.2, "levels": 3, "wavelet": "db4"},
+  "fixed": {"n_iter": 100},
+}
