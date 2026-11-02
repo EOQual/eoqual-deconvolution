@@ -30,7 +30,7 @@ import numpy as np
 from scipy import ndimage
 
 from eoqual.core.kernel import convolve_circular
-from eoqual.core.psf import airy_radius_px, integrated_profile
+from eoqual.core.psf import airy_radius_px, integrated_profile, supersampled_coverage
 
 __all__ = [
     "gaussian_psf", "airy_psf", "moffat_psf", "disk_psf", "motion_psf", "center_psf",
@@ -125,11 +125,7 @@ def moffat_psf(alpha: float, beta: float = 4.765, size: int | None = None) -> np
 
 def _supersampled(mask_func, n: int, supersample: int) -> np.ndarray:
     c = (n - 1) / 2.0
-    s = np.arange(supersample) / supersample + 0.5 / supersample - 0.5
-    grid = np.arange(n) - c
-    yy = (grid[:, None, None, None] + s[None, None, :, None])
-    xx = (grid[None, :, None, None] + s[None, None, None, :])
-    out = mask_func(yy, xx).mean(axis=(2, 3))
+    out = supersampled_coverage(mask_func, (n, n), (c, c), supersample)
     return out / out.sum()
 
 

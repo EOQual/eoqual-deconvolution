@@ -33,7 +33,13 @@ dans `REFERENCE_TECHNIQUE.md`, annexe A.
         (« Pour aller plus loin ») ; `BENCHMARK.md` §4 (données
         incomplètes).
     -   Test de référence par CVXPY (dépendance de développement).
-    -   Dépend d'eoqual-core 0.3.0 (`psf.airy_radius_px`).
+    -   Dépend d'eoqual-core 0.4.0 (`psf.airy_radius_px`,
+        `psf.supersampled_coverage`). `psf._supersampled` (interne,
+        `disk_psf`/`motion_psf`) délègue maintenant à
+        `eoqual.core.psf.supersampled_coverage` plutôt que de dupliquer
+        le même calcul — refactor pur, comportement et sortie numérique
+        inchangés (suite de tests complète revérifiée : 111 tests,
+        aucune régression).
 
 0.1.0 (2026-10-29)
 

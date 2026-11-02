@@ -23,7 +23,7 @@ exclude = [
 python = ">=3.10,<4.0"
 # Briques communes (kernel, noise, psf, fourier), épinglées sur une
 # version : voir les règles de stabilité d'eoqual-core.
-eoqual-core = {git = "https://github.com/EOQual/eoqual-core.git", tag = "v0.3.0"}
+eoqual-core = {git = "https://github.com/EOQual/eoqual-core.git", tag = "v0.4.0"}
 # Métriques (PSNR, SSIM, indice de netteté SI) : réglage et benchmark.
 eoqual-metrics = {git = "https://github.com/EOQual/eoqual-metrics.git", tag = "v1.2.1"}
 # Figures Plotly génériques (galerie, courbes).
