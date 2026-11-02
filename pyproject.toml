@@ -25,7 +25,7 @@ python = ">=3.10,<4.0"
 # version : voir les règles de stabilité d'eoqual-core.
 eoqual-core = {git = "https://github.com/EOQual/eoqual-core.git", tag = "v0.4.0"}
 # Métriques (PSNR, SSIM, indice de netteté SI) : réglage et benchmark.
-eoqual-metrics = {git = "https://github.com/EOQual/eoqual-metrics.git", tag = "v1.2.1"}
+eoqual-metrics = {git = "https://github.com/EOQual/eoqual-metrics.git", tag = "v1.2.2"}
 # Figures Plotly génériques (galerie, courbes).
 eoqual-viz = {git = "https://github.com/EOQual/eoqual-viz.git", tag = "v0.2.0"}
 numpy = "*"

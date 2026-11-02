@@ -40,6 +40,12 @@ dans `REFERENCE_TECHNIQUE.md`, annexe A.
         le même calcul — refactor pur, comportement et sortie numérique
         inchangés (suite de tests complète revérifiée : 111 tests,
         aucune régression).
+    -   **Correctif CI** : `eoqual-metrics` relevé à 1.2.2 — l'ancien
+        pin (1.2.1) épinglait lui-même `eoqual-core` à 0.1.0, en
+        conflit avec le pin direct 0.4.0 ci-dessus (`SolverProblemError`
+        de poetry, les deux ne pouvant pas coexister pour un même paquet
+        git épinglé par tag). 1.2.2 d'eoqual-metrics relève ce même pin
+        à 0.4.0, purement additif de son côté aussi.
 
 0.1.0 (2026-10-29)
 
