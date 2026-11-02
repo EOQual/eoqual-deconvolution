@@ -13,7 +13,7 @@ from __future__ import annotations
 import numpy as np
 from scipy import fft as spfft
 
-from ._common import regularizer_power, setup
+from ._common import regularizer_power, setup, solve_with_fill
 from ..utils import resolve_sigma
 
 __all__ = [
@@ -30,8 +30,11 @@ def inverse_deconvolve(
     psf: np.ndarray,
     sigma: float | None = None,
     *,
-    threshold: float = 0.05,
+    threshold: float = 0.15,
     boundary: str = "reflect",
+    mask: np.ndarray | None = None,
+    saturation: float | None = None,
+    n_fill_iter: int = 30,
 ) -> np.ndarray:
     """
     Filtre inverse tronqué : ``X = Y / H`` là où ``|H| ≥ threshold``,
@@ -43,19 +46,29 @@ def inverse_deconvolve(
 
     Parameters
     ----------
-    threshold : float, default 0.05
-        Seuil sur ``|H|`` (``H(0) = 1``), dans ]0, 1].
+    threshold : float, default 0.15
+        Seuil sur ``|H|`` (``H(0) = 1``), dans ]0, 1] ; 0.15 maximise le
+        PSNR moyen sur quatre flous et trois niveaux de bruit (BENCHMARK.md).
     boundary : str, default "reflect"
         Traitement des bords (:mod:`eoqual.deconvolution.operators`).
+    mask : np.ndarray of bool, optional
+        Pixels valides (``True``) ; les autres (et les NaN) sont inconnus.
+    saturation : float, optional
+        Seuil de saturation (unités de l'image) : attache unilatérale.
+    n_fill_iter : int, default 30
+        Itérations de remplissage des pixels inconnus ou saturés (et de la
+        marge si ``boundary="unknown"``) ; sans effet sur des données
+        complètes.
     """
     if not 0 < threshold <= 1:
         raise ValueError(f"threshold doit être dans ]0, 1], reçu {threshold}.")
-    pb = setup(image, psf, boundary)
+    pb = setup(image, psf, boundary, mask=mask, saturation=saturation)
     H = pb.op.otf
     keep = np.abs(H) >= threshold
     G = np.zeros_like(H)
     G[keep] = 1.0 / H[keep]
-    return pb.domain.restore(pb.op.solve_quadratic(spfft.fft2(pb.y) * G, 1.0))
+    x = solve_with_fill(pb, lambda y: pb.op.solve_quadratic(spfft.fft2(y) * G, 1.0), n_fill_iter)
+    return pb.domain.restore(x)
 
 
 def fit_power_law_signal(
@@ -116,7 +129,10 @@ def wiener_deconvolve(
     *,
     nsr: float | None = None,
     beta: float | None = None,
-    boundary: str = "reflect",
+    boundary: str = "unknown",
+    mask: np.ndarray | None = None,
+    saturation: float | None = None,
+    n_fill_iter: int = 30,
 ) -> np.ndarray:
     """
     Filtre de Wiener ``X = H* Y / (|H|² + Sb/Sx)``.
@@ -142,9 +158,20 @@ def wiener_deconvolve(
         Rapport bruit/signal constant.
     beta : float, optional
         Exposant de la loi de puissance du signal ; ``None`` : ajusté.
-    boundary : str, default "reflect"
+    boundary : str, default "unknown"
+        Marge inconnue (:mod:`eoqual.deconvolution.operators`) : +0.8 à
+        +2.2 dB sur un flou à OTF nulle par endroits (bougé), neutre
+        ailleurs (BENCHMARK.md).
+    mask : np.ndarray of bool, optional
+        Pixels valides (``True``) ; les autres (et les NaN) sont inconnus.
+    saturation : float, optional
+        Seuil de saturation (unités de l'image) : attache unilatérale.
+    n_fill_iter : int, default 30
+        Itérations de remplissage des pixels inconnus ou saturés (et de la
+        marge si ``boundary="unknown"``) ; sans effet sur des données
+        complètes.
     """
-    pb = setup(image, psf, boundary)
+    pb = setup(image, psf, boundary, mask=mask, saturation=saturation)
     H, abs2 = pb.op.otf, pb.op.abs2
     Y = spfft.fft2(pb.y)
     if nsr is not None:
@@ -152,7 +179,7 @@ def wiener_deconvolve(
             raise ValueError(f"nsr doit être positif ou nul, reçu {nsr}.")
         ratio = np.full(abs2.shape, float(nsr))
     else:
-        s = resolve_sigma(image, sigma)
+        s = resolve_sigma(pb.domain.restore(pb.y), sigma)
         sx, _, _ = fit_power_law_signal(Y, abs2, s, beta)
         n = Y.size
         with np.errstate(divide="ignore"):
@@ -160,7 +187,8 @@ def wiener_deconvolve(
         ratio[0, 0] = 0.0
     W = np.conj(H) / np.maximum(abs2 + ratio, 1e-300)
     W[~np.isfinite(W)] = 0.0
-    return pb.domain.restore(pb.op.solve_quadratic(Y * W, 1.0))
+    x = solve_with_fill(pb, lambda y: pb.op.solve_quadratic(spfft.fft2(y) * W, 1.0), n_fill_iter)
+    return pb.domain.restore(x)
 
 
 def wiener_unsupervised_deconvolve(
@@ -171,6 +199,8 @@ def wiener_unsupervised_deconvolve(
     max_num_iter: int = 200,
     seed: int | None = 0,
     boundary: str = "reflect",
+    mask: np.ndarray | None = None,
+    saturation: float | None = None,
 ) -> np.ndarray:
     """
     Wiener non supervisé (Orieux, Giovannelli & Rodet 2010), via
@@ -182,11 +212,19 @@ def wiener_unsupervised_deconvolve(
     ----------
     max_num_iter : int, default 200
         Nombre maximal d'itérations de l'échantillonneur.
+    mask, saturation :
+        Non pris en charge (``ValueError``) ; présents pour la signature
+        commune.
     seed : int, optional
         Graine de l'échantillonneur (résultat reproductible).
     """
     from skimage.restoration import unsupervised_wiener
 
+    if mask is not None or saturation is not None or boundary == "unknown":
+        raise ValueError(
+            "wiener_unsupervised ne gère pas les données incomplètes (mask, saturation, "
+            "boundary='unknown') : utiliser wiener, tikhonov ou une méthode itérative."
+        )
     pb = setup(image, psf, boundary)
     # skimage centre la PSF en (kh // 2, kw // 2), comme psf2otf.
     est, _ = unsupervised_wiener(
@@ -203,7 +241,10 @@ def tikhonov_deconvolve(
     lam: float | None = None,
     regularizer: str = "laplacian",
     rule: str = "gcv",
-    boundary: str = "reflect",
+    boundary: str = "unknown",
+    mask: np.ndarray | None = None,
+    saturation: float | None = None,
+    n_fill_iter: int = 30,
 ) -> np.ndarray:
     """
     Tikhonov : ``min ‖h ∗ x − y‖² + λ ‖L x‖²``, solution
@@ -222,17 +263,30 @@ def tikhonov_deconvolve(
         Choix automatique de ``λ`` quand ``lam=None`` : validation
         croisée généralisée (sans connaissance du bruit), ou principe de
         discrépance de Morozov (``‖h ∗ x − y‖² = N σ²``) — voir
-        :mod:`eoqual.deconvolution.tuning.criteria`.
-    boundary : str, default "reflect"
+        :mod:`eoqual.deconvolution.tuning.criteria`. Sur données
+        incomplètes, λ est choisi sur l'image pré-remplie.
+    boundary : str, default "unknown"
+        Marge inconnue (:mod:`eoqual.deconvolution.operators`) : +0.8 à
+        +2.2 dB sur un flou à OTF nulle par endroits (bougé), neutre
+        ailleurs (BENCHMARK.md).
+    mask : np.ndarray of bool, optional
+        Pixels valides (``True``) ; les autres (et les NaN) sont inconnus.
+    saturation : float, optional
+        Seuil de saturation (unités de l'image) : attache unilatérale.
+    n_fill_iter : int, default 30
+        Itérations de remplissage des pixels inconnus ou saturés (et de la
+        marge si ``boundary="unknown"``) ; sans effet sur des données
+        complètes.
     """
-    pb = setup(image, psf, boundary)
+    pb = setup(image, psf, boundary, mask=mask, saturation=saturation)
     L2 = regularizer_power(regularizer, pb.y.shape)
     Y = spfft.fft2(pb.y)
     if lam is None:
         from ..tuning.criteria import select_lambda
 
-        lam = select_lambda(Y, pb.op.abs2, L2, rule=rule, sigma=resolve_sigma(image, sigma) if rule == "discrepancy" else None)
+        lam = select_lambda(Y, pb.op.abs2, L2, rule=rule, sigma=resolve_sigma(pb.domain.restore(pb.y), sigma) if rule == "discrepancy" else None)
     if lam < 0:
         raise ValueError(f"lam doit être positif ou nul, reçu {lam}.")
     W = np.conj(pb.op.otf) / np.maximum(pb.op.abs2 + lam * L2, 1e-300)
-    return pb.domain.restore(pb.op.solve_quadratic(Y * W, 1.0))
+    x = solve_with_fill(pb, lambda y: pb.op.solve_quadratic(spfft.fft2(y) * W, 1.0), n_fill_iter)
+    return pb.domain.restore(x)

@@ -61,3 +61,7 @@ autoapi_options = [
     "show-module-summary",
     "imported-members",
 ]
+
+# Attributs des docstrings rendus en champs :ivar: (évite les doublons avec
+# les attributs de dataclass documentés par autoapi).
+napoleon_use_ivar = True

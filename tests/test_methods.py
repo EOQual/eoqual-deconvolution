@@ -145,7 +145,7 @@ def test_tv_objective_decreases(blurred, psf):
     pb = setup(blurred, psf, "reflect")
     yu, lo, sc = to_unit_range(pb.y)
     vals = []
-    deconvolve(blurred, psf, "tv_primal_dual", sigma=SIGMA, n_iter=150, tol=0,
+    deconvolve(blurred, psf, "tv_primal_dual", sigma=SIGMA, n_iter=150, tol=0, boundary="reflect",
                callback=lambda k, x: vals.append(tv_objective((x - lo) / sc, yu, pb.op, 0.1 * SIGMA / sc)))
     assert vals[-1] < vals[0]
     assert vals[-1] <= min(vals[:10])

@@ -22,10 +22,12 @@ def richardson_lucy_deconvolve(
     psf: np.ndarray,
     sigma: float | None = None,
     *,
-    n_iter: int = 12,
+    n_iter: int = 50,
     acceleration: bool = True,
-    tv_weight: float = 0.0,
+    tv_weight: float = 0.005,
     boundary: str = "reflect",
+    mask: np.ndarray | None = None,
+    saturation: float | None = None,
     callback: Callback = None,
 ) -> np.ndarray:
     """
@@ -42,28 +44,37 @@ def richardson_lucy_deconvolve(
     sigma : float, optional
         Ignoré (le nombre d'itérations régularise) ; présent pour la
         signature commune.
-    n_iter : int, default 12
-        Nombre d'itérations : trop peu, l'image reste floue ; trop,
-        le bruit est amplifié (semi-convergence). 12 itérations accélérées
-        sont un bon compromis sur les flous du benchmark (BENCHMARK.md) ;
-        un flou large en demande plus.
+    n_iter : int, default 50
+        Nombre d'itérations : trop peu, l'image reste floue ; sans
+        régularisation, trop d'itérations amplifient le bruit
+        (semi-convergence). Avec ``tv_weight`` (défaut), la TV stabilise
+        les itérations et 50 itérations accélérées sont le meilleur
+        compromis sur quatre flous et trois niveaux de bruit (BENCHMARK.md).
     acceleration : bool, default True
         Extrapolation vectorielle de Biggs & Andrews (1997), ordre 1 :
         résultat comparable en 3 à 5 fois moins d'itérations.
-    tv_weight : float, default 0
+    tv_weight : float, default 0.005
         Régularisation par variation totale (Dey et al. 2006) :
         ``x ← x · Hᵀ(y / Hx) / (1 − λ div(∇x / |∇x|))``. Sans dimension ;
-        valeurs utiles de l'ordre de 1e-3 à 1e-2.
+        valeurs utiles de l'ordre de 1e-3 à 1e-2. ``0`` : Richardson-Lucy
+        pur, à utiliser avec une dizaine d'itérations seulement.
     boundary : str, default "reflect"
+    mask : np.ndarray of bool, optional
+        Pixels valides (``True``) ; les autres (et les NaN) sont inconnus.
+    saturation : float, optional
+        Seuil de saturation (unités de l'image) : attache unilatérale.
+        Pixels inconnus et saturés : EM à données manquantes, ``y``
+        complété par ``Hx`` (inconnus) ou ``max(Hx, L)`` (saturés).
     callback : callable, optional
         ``callback(k, x)`` après chaque itération.
     """
     if n_iter < 1:
         raise ValueError("n_iter doit être ≥ 1.")
-    pb = setup(image, psf, boundary)
+    pb = setup(image, psf, boundary, mask=mask, saturation=saturation)
     y = pb.y
     offset = min(float(y.min()), 0.0)
     y = y - offset + _EPS
+    level = None if pb.level is None else pb.level - offset + _EPS
     op = pb.op
 
     x = np.full_like(y, y.mean())
@@ -76,7 +87,8 @@ def richardson_lucy_deconvolve(
             z = np.clip(x + alpha * (x - x_prev), _EPS, None)
         else:
             z = x
-        update = z * op.adjoint(y / np.maximum(op.forward(z), _EPS))
+        Hz = np.maximum(op.forward(z), _EPS)
+        update = z * op.adjoint(pb.fill(Hz, y, level) / Hz)
         if tv_weight > 0:
             gz = gradient(z)
             norm = np.sqrt(np.sum(gz**2, axis=0)) + 1e-8 * max(float(z.max()), _EPS)
@@ -100,7 +112,10 @@ def landweber_deconvolve(
     step: float | None = None,
     positivity: bool = True,
     stop_at_discrepancy: bool = True,
+    acceleration: bool = False,
     boundary: str = "reflect",
+    mask: np.ndarray | None = None,
+    saturation: float | None = None,
     callback: Callback = None,
 ) -> np.ndarray:
     """
@@ -122,25 +137,46 @@ def landweber_deconvolve(
         nulle ou à fond soustrait.
     stop_at_discrepancy : bool, default True
         Arrêt dès que ``‖Hx − y‖² ≤ N σ²`` (principe de discrépance,
-        évalué sur le domaine de travail) : le nombre d'itérations s'adapte
-        au flou et au bruit. ``False`` : exactement ``n_iter`` itérations.
+        évalué sur les ``N`` pixels connus du domaine de travail) : le nombre
+        d'itérations s'adapte au flou et au bruit. ``False`` : exactement
+        ``n_iter`` itérations.
+    acceleration : bool, default False
+        Pas de Barzilai & Borwein (1988) : ``τ_k = ‖s‖² / ‖Hs‖²``,
+        ``s = x_k − x_{k−1}`` (pas exact du quotient de Rayleigh inverse pour
+        une attache quadratique), borné à ``[0.5, 50] / max|H|²``. Atteint
+        la discrépance en beaucoup moins d'itérations (BENCHMARK.md).
     boundary : str, default "reflect"
+    mask : np.ndarray of bool, optional
+        Pixels valides (``True``) ; les autres (et les NaN) sont inconnus.
+    saturation : float, optional
+        Seuil de saturation (unités de l'image) : attache unilatérale.
     callback : callable, optional
     """
     if n_iter < 1:
         raise ValueError("n_iter doit être ≥ 1.")
-    pb = setup(image, psf, boundary)
+    pb = setup(image, psf, boundary, mask=mask, saturation=saturation)
     y, op = pb.y, pb.op
-    tau = 1.9 / op.lipschitz if step is None else float(step)
-    target = y.size * resolve_sigma(image, sigma) ** 2 if stop_at_discrepancy else None
+    tau0 = 1.9 / op.lipschitz if step is None else float(step)
+    tau = tau0
+    target = (pb.n_known * resolve_sigma(pb.domain.restore(y), sigma) ** 2
+              if stop_at_discrepancy else None)
     x = y.copy()
+    x_prev = g_prev = None
     for k in range(n_iter):
-        r = op.forward(x) - y
+        r = pb.residual(op.forward(x), y, pb.level)
         if target is not None and np.sum(r**2) <= target:
             break
-        x = x - tau * op.adjoint(r)
+        g = op.adjoint(r)
+        if acceleration and x_prev is not None:
+            sk = x - x_prev
+            Hs = op.forward(sk)
+            den = float(np.sum(Hs**2))
+            if den > 0:
+                tau = float(np.clip(np.sum(sk**2) / den, 0.5 / op.lipschitz, 50.0 / op.lipschitz))
+        x_prev = x
+        x = x - tau * g
         if positivity:
-            np.clip(x, 0.0, None, out=x)
+            x = np.clip(x, 0.0, None)
         if callback is not None:
             callback(k, x)
     return pb.domain.restore(x)

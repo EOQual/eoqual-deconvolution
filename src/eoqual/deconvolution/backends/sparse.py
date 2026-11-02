@@ -45,14 +45,16 @@ def fista_wavelet_deconvolve(
     psf: np.ndarray,
     sigma: float | None = None,
     *,
-    lam: float = 0.2,
+    lam: float = 0.15,
     wavelet: str = "db4",
-    levels: int = 3,
+    levels: int = 5,
     n_iter: int = 100,
     cycle_spin: bool = True,
     data_range: tuple[float, float] | None = None,
     seed: int = 0,
-    boundary: str = "reflect",
+    boundary: str = "unknown",
+    mask: np.ndarray | None = None,
+    saturation: float | None = None,
     callback: Callback = None,
 ) -> np.ndarray:
     """
@@ -62,12 +64,12 @@ def fista_wavelet_deconvolve(
     ----------
     sigma : float, optional
         Écart-type du bruit (unités de l'image) ; ``None`` : estimé.
-    lam : float, default 0.2
+    lam : float, default 0.15
         Poids de la parcimonie, **en multiples de σ** : seuil effectif
         ``lam · σ / max|H|²`` par itération.
     wavelet : str, default "db4"
         Ondelette orthogonale PyWavelets.
-    levels : int, default 3
+    levels : int, default 5
         Niveaux de décomposition.
     n_iter : int, default 100
     cycle_spin : bool, default True
@@ -80,14 +82,22 @@ def fista_wavelet_deconvolve(
         ``(min, max)`` de la dynamique ; défaut : celle de l'image.
     seed : int, default 0
         Graine des décalages.
-    boundary : str, default "reflect"
+    boundary : str, default "unknown"
+        Marge inconnue (:mod:`eoqual.deconvolution.operators`) : +0.8 à
+        +2.2 dB sur un flou à OTF nulle par endroits (bougé), neutre
+        ailleurs (BENCHMARK.md).
+    mask : np.ndarray of bool, optional
+        Pixels valides (``True``) ; les autres (et les NaN) sont inconnus.
+    saturation : float, optional
+        Seuil de saturation (unités de l'image) : attache unilatérale.
     callback : callable, optional
     """
     if n_iter < 1:
         raise ValueError("n_iter doit être ≥ 1.")
-    s = resolve_sigma(image, sigma)
-    pb = setup(image, psf, boundary, multiple=2**levels)
+    pb = setup(image, psf, boundary, multiple=2**levels, mask=mask, saturation=saturation)
+    s = resolve_sigma(pb.domain.restore(pb.y), sigma)
     y, lo, scale = to_unit_range(pb.y, data_range)
+    level = pb.level_in(lo, scale)
     t = lam * (s / scale) / pb.op.lipschitz
     step = 1.0 / pb.op.lipschitz
     rng = np.random.default_rng(seed)
@@ -98,7 +108,7 @@ def fista_wavelet_deconvolve(
     tk = 1.0
     for k in range(n_iter):
         shift = tuple(rng.integers(0, block, 2)) if cycle_spin else (0, 0)
-        x_new = _wavelet_prox(z - step * pb.op.gradient_data(z, y), t, wavelet, levels, shift)
+        x_new = _wavelet_prox(z - step * pb.gradient_data(z, y, level), t, wavelet, levels, shift)
         tk_new = 0.5 * (1.0 + np.sqrt(1.0 + 4.0 * tk * tk))
         z = x_new + ((tk - 1.0) / tk_new) * (x_new - x)
         x, tk = x_new, tk_new
@@ -129,7 +139,9 @@ def tv_primal_dual_deconvolve(
     positivity: bool = False,
     data_range: tuple[float, float] | None = None,
     tol: float = 1e-5,
-    boundary: str = "reflect",
+    boundary: str = "unknown",
+    mask: np.ndarray | None = None,
+    saturation: float | None = None,
     callback: Callback = None,
 ) -> np.ndarray:
     """
@@ -156,14 +168,22 @@ def tv_primal_dual_deconvolve(
     data_range : tuple, optional
     tol : float, default 1e-5
         Arrêt quand ``‖x_k+1 − x_k‖ / ‖x_k‖ < tol``.
-    boundary : str, default "reflect"
+    boundary : str, default "unknown"
+        Marge inconnue (:mod:`eoqual.deconvolution.operators`) : +0.8 à
+        +2.2 dB sur un flou à OTF nulle par endroits (bougé), neutre
+        ailleurs (BENCHMARK.md).
+    mask : np.ndarray of bool, optional
+        Pixels valides (``True``) ; les autres (et les NaN) sont inconnus.
+    saturation : float, optional
+        Seuil de saturation (unités de l'image) : attache unilatérale.
     callback : callable, optional
     """
     if n_iter < 1:
         raise ValueError("n_iter doit être ≥ 1.")
-    s = resolve_sigma(image, sigma)
-    pb = setup(image, psf, boundary)
+    pb = setup(image, psf, boundary, mask=mask, saturation=saturation)
+    s = resolve_sigma(pb.domain.restore(pb.y), sigma)
     y, lo, scale = to_unit_range(pb.y, data_range)
+    level = pb.level_in(lo, scale)
     weight = lam * s / scale
     lip = pb.op.lipschitz
     tau = 0.99 / lip
@@ -172,7 +192,7 @@ def tv_primal_dual_deconvolve(
     x = y.copy()
     p = np.zeros((2,) + x.shape)
     for k in range(n_iter):
-        x_new = x - tau * (pb.op.gradient_data(x, y) - divergence(p))
+        x_new = x - tau * (pb.gradient_data(x, y, level) - divergence(p))
         if positivity:
             np.clip(x_new, 0.0, None, out=x_new)
         p = prox_tv_dual_projection(p + sig * gradient(2 * x_new - x), weight)

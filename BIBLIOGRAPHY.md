@@ -56,6 +56,11 @@ pour écrire les méthodes de ce paquet (voir
   the first kind", *American Journal of Mathematics* 73(3), 615-624,
   1951 ; M. Bertero, P. Boccacci, *Introduction to Inverse Problems in
   Imaging*, IOP, 1998. — `landweber`.
+- J. Barzilai, J. M. Borwein, "Two-point step size gradient methods",
+  *IMA J. Numer. Anal.* 8(1), 141-148, 1988. — `landweber(acceleration=True)`.
+- S. Bonettini, R. Zanella, L. Zanni, "A scaled gradient projection
+  method for constrained image deblurring", *Inverse Problems* 25(1),
+  015002, 2009. — piste pour Richardson-Lucy (REFERENCE_TECHNIQUE.md §12).
 
 ## Méthodes variationnelles
 
@@ -118,6 +123,22 @@ pour écrire les méthodes de ce paquet (voir
   projections onto the ℓ1-ball for learning in high dimensions", *ICML*,
   2008. — projection sur le simplexe.
 
+## Données incomplètes et bords
+
+- M. S. C. Almeida, M. A. T. Figueiredo, "Deconvolving images with
+  unknown boundaries using the alternating direction method of
+  multipliers", *IEEE TIP* 22(8), 3074-3086, 2013. — `boundary="unknown"`.
+- A. P. Dempster, N. M. Laird, D. B. Rubin, "Maximum likelihood from
+  incomplete data via the EM algorithm", *J. R. Stat. Soc. B* 39(1),
+  1-38, 1977. — remplissage des données manquantes (`mask`, `saturation`).
+- M. Bertero, P. Boccacci, "A simple method for the reduction of boundary
+  effects in the Richardson-Lucy approach to image deconvolution",
+  *Astronomy & Astrophysics* 437, 369-374, 2005. — Richardson-Lucy à
+  bords inconnus.
+- N. Antipa, G. Kuo, R. Heckel, B. Mildenhall, E. Bostan, R. Ng, L. Waller,
+  "DiffuserCam: lensless single-exposure 3D imaging", *Optica* 5(1), 1-9,
+  2018. — ADMM avec recadrage (bords inconnus).
+
 ## Bords et PSF
 
 - L. Moisan, "Periodic plus smooth image decomposition", *JMIV* 39(2),
@@ -130,3 +151,47 @@ pour écrire les méthodes de ce paquet (voir
 - I. Trujillo, J. A. L. Aguerri, J. Cepa, C. M. Gutiérrez, "The effects
   of seeing on Sérsic profiles — II. The Moffat PSF", *MNRAS* 328(3),
   977-985, 2001. — β = 4.765 de `moffat_psf`.
+- V. N. Mahajan, *Optical Imaging and Aberrations, Part II: Wave
+  Diffraction Optics*, SPIE Press, 2001. — pupille annulaire
+  (`annular_airy`, `system_psf`).
+
+## Validation
+
+- S. Diamond, S. Boyd, "CVXPY: a Python-embedded modeling language for
+  convex optimization", *JMLR* 17(83), 1-5, 2016. — solution de référence
+  de `tests/test_reference_cvxpy.py`.
+
+## Pistes (REFERENCE_TECHNIQUE.md §12)
+
+- Y. Zhu, K. Zhang, J. Liang, J. Cao, B. Wen, R. Timofte, L. Van Gool,
+  "Denoising diffusion models for plug-and-play image restoration",
+  *CVPR Workshops*, 2023. — DiffPIR.
+- H. Chung, J. Kim, M. T. McCann, M. L. Klasky, J. C. Ye, "Diffusion
+  posterior sampling for general noisy inverse problems", *ICLR*, 2023. —
+  DPS.
+- M. A. T. Figueiredo, J. M. Bioucas-Dias, "Restoration of Poissonian
+  images using alternating direction optimization", *IEEE TIP* 19(12),
+  3133-3145, 2010. — PIDAL (Poisson + TV).
+- S. Prigent et al., "SPITFIR(e): a supermaneuverable algorithm for
+  fast denoising and deconvolution of 3D fluorescence microscopy images
+  and videos", *Scientific Reports* 13, 1489, 2023.
+
+## Pour aller plus loin (cours et tutoriels)
+
+Ressources publiques qui ont guidé la progression de
+[TUTORIEL.md](TUTORIEL.md) ; aucun contenu n'en est repris.
+
+- C. Chaux, TP « Méthodes variationnelles pour l'imagerie », École
+  GEOMDATA 2018 — https://www.i2m.univ-amu.fr/~caroline.chaux/enseignements.html
+- G. Peyré, Numerical Tours, « Image Deconvolution using Variational
+  Method » — https://github.com/gpeyre/numerical-tours
+- H. Talbot, scripts du manuel d'optimisation —
+  https://github.com/hugues-talbot/optimization_textbook
+- M. Ponti, cours de traitement d'images (ICMC-USP) —
+  https://github.com/maponti/imageprocessing_course_icmc
+- Waller Lab, tutoriel DiffuserCam — https://github.com/Waller-Lab/DiffuserCam-Tutorial
+- Stanford EE367 « Computational Imaging » — https://stanford.edu/class/ee367/
+- Dépôt BBii-Decon (gradient projeté de Barzilai-Borwein, microscopie) —
+  https://github.com/gdellaire/BBii-Decon
+- S. Prigent, sdeconv (SPITFIR(e), Wiener, Richardson-Lucy, PyTorch) —
+  https://github.com/sylvainprigent/sdeconv

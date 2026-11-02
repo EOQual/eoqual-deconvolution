@@ -131,3 +131,46 @@ def test_apply_per_channel():
     np.testing.assert_allclose(out[1], 6.0)
     with pytest.raises(ValueError):
         apply_per_channel(lambda b, sigma: b, img, 0, sigma=[1.0])
+
+
+def _otf_pupil(nu):
+    nu = np.clip(nu, 0, 1)
+    return 2 / np.pi * (np.arccos(nu) - nu * np.sqrt(1 - nu**2))
+
+
+def test_system_psf_matches_diffraction_and_pixel_mtf():
+    from eoqual.core.kernel import psf2otf
+
+    focal = 2 * 0.3 * 11e-6 / 0.55e-6  # λ f / (D p) = 2 : coupure optique à Nyquist
+    h = P.system_psf(0.55e-6, 0.3, focal, 11e-6, size=121)
+    assert h.sum() == pytest.approx(1.0) and h.shape == (121, 121)
+    np.testing.assert_allclose(_centroid(h), (60, 60), atol=1e-6)
+    mtf = np.abs(psf2otf(h, (512, 512)))
+    for f in (0.125, 0.25, 0.375):  # FTM = diffraction × sinc(pixel)
+        assert mtf[0, int(f * 512)] == pytest.approx(_otf_pupil(f / 0.5) * np.sinc(f), rel=0.02)  # ailes tronquées
+    assert mtf[0, 256] < 0.01  # rien au-delà de la coupure
+
+
+def test_system_psf_options():
+    base = P.system_psf(0.55e-6, 0.3, 3.0, 11e-6)
+    obsc = P.system_psf(0.55e-6, 0.3, 3.0, 11e-6, obscuration=0.3)
+    assert obsc.max() < base.max()  # énergie déplacée vers les anneaux
+    smear = P.system_psf(0.55e-6, 0.3, 3.0, 11e-6, motion_length=4.0, size=base.shape[0])
+    c = base.shape[0] // 2
+    assert smear[c].std() < base[c].std()  # filé horizontal : profil plus étalé
+    assert P.system_psf(0.55e-6, 0.3, 3.0, 11e-6, jitter_sigma=1.0, defocus_radius=1.0).max() < base.max()
+    with pytest.raises(ValueError):
+        P.system_psf(0.55e-6, 0.3, 3.0, 11e-6, oversample=4)
+    with pytest.raises(ValueError):
+        P.system_psf(0.55e-6, 0.3, 3.0, 11e-6, obscuration=1.0)
+    assert P.annular_airy(np.array([0.0]), 2.0, 0.3)[0] == pytest.approx(1.0)
+
+
+def test_combine_psfs_variances_add():
+    g = P.combine_psfs(P.gaussian_psf(1.0), P.gaussian_psf(2.0))
+    y, x = np.indices(g.shape)
+    c = g.shape[0] // 2
+    var = (g * (x - c) ** 2).sum()
+    assert var == pytest.approx(1.0 + 4.0 + 2 / 12, rel=0.01)  # intégration sur le pixel : + 1/12 chacune
+    with pytest.raises(ValueError):
+        P.combine_psfs()

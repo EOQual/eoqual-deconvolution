@@ -43,7 +43,8 @@ scikit-image.
 |---|---|---|---|
 | `pnp` | eoqual-denoising | MIT | 🟢 avec les débruiteurs du socle d'eoqual-denoising |
 | `deep` | eoqual-denoising, torch, deepinv, einops | BSD-3-Clause / MIT | 🟢 code et poids DRUNet (BSD-3-Clause) |
-| `optim` | scikit-optimize | BSD-3-Clause | 🟢 |
+| `optim` | scikit-optimize | BSD-3-Clause |
+| cvxpy (développement seulement, test de référence) | Apache-2.0 | 🟢 |
 
 🟡 **Le Plug-and-Play hérite de la licence du débruiteur choisi.** Tous
 les débruiteurs d'eoqual-denoising sont acceptés par `denoiser=` ;

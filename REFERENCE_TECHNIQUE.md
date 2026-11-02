@@ -7,7 +7,7 @@ références complètes dans [BIBLIOGRAPHY.md](BIBLIOGRAPHY.md).
 ## Sommaire
 
 1. [Modèle et notations](#1-modèle-et-notations)
-2. [Bords](#2-bords)
+2. [Bords et données incomplètes](#2-bords-et-données-incomplètes)
 3. [Méthodes linéaires](#3-méthodes-linéaires)
 4. [Méthodes itératives](#4-méthodes-itératives)
 5. [Choix du paramètre des méthodes linéaires](#5-choix-du-paramètre-des-méthodes-linéaires)
@@ -34,6 +34,17 @@ ramené à l'origine, donc ``H`` réelle pour une PSF symétrique).
 ``Hx``, ``Hᵀx``, le gradient ``Hᵀ(Hx − y)`` de ``½‖Hx − y‖²`` et sa
 constante de Lipschitz ``max|H|²`` (1 pour une PSF positive de somme 1).
 
+**Pourquoi la FFT.** La convolution est une application linéaire
+``y = Hx`` dont la matrice ``N × N`` est inutilisable telle quelle
+(10¹⁰ coefficients pour 10⁵ pixels). Sur un domaine périodique, ``H`` est
+**circulante par blocs à blocs circulants** (BCCB) : la transformée de
+Fourier discrète la diagonalise, et ses valeurs propres sont les
+coefficients ``H(ω)``. ``Hx``, ``Hᵀx`` (multiplication par ``H*``) et
+``(HᵀH + λLᵀL)⁻¹`` (division par ``|H|² + λ|L|²`` si ``L`` est aussi une
+convolution) coûtent une FFT, ``O(N log N)``. Tout l'enjeu du traitement
+des bords (§2) est de rendre ce cadre périodique légitime pour une image
+qui ne l'est pas. Illustration pas à pas : [TUTORIEL.md](TUTORIEL.md) §1.
+
 **Unités.** σ est toujours dans les unités de l'image. Les méthodes non
 linéaires travaillent sur l'image ramenée à [0, 1] (``data_range``,
 défaut : min/max de l'image) et expriment leur poids de régularisation en
@@ -49,24 +60,102 @@ sous-bande d'ondelettes diagonale la plus fine
 sous-bande contient peu de signal : l'estimation est fiable (±15 % dans
 les tests) ; elle sous-estime un bruit corrélé.
 
-## 2. Bords
+## 2. Bords et données incomplètes
+
+### 2.1 Bords
 
 Toutes les méthodes résolvent le problème sur un domaine périodique. Une
 image réelle ne l'est pas : la discontinuité entre bords opposés produit
 des oscillations sur toute l'image restaurée. ``boundary`` :
 
-- **``"reflect"``** (défaut) : l'image est prolongée d'une marge d'au
-  moins deux tailles de PSF au total (taille rapide pour la FFT), placée
-  après l'image. Dans la marge, le miroir du bord de fin se fond, par une
+- **``"reflect"``** : l'image est prolongée d'une marge d'au moins deux
+  tailles de PSF au total (taille rapide pour la FFT), placée après
+  l'image. Dans la marge, le miroir du bord de fin se fond, par une
   pondération en cosinus surélevé, dans le miroir du bord de début : le
-  domaine de travail est **continu et périodique**. Le résultat est
-  recadré sur ``[:H, :W]`` ;
+  domaine de travail est **continu et périodique**. La marge est traitée
+  comme mesurée. Le résultat est recadré sur ``[:H, :W]`` ;
+- **``"unknown"``** : même marge, mais traitée comme une **donnée
+  inconnue** (§2.2) : seule l'image d'origine contraint la solution
+  (Almeida & Figueiredo 2013). Le plus exact ;
 - **``"perdecomp"``** : décomposition périodique + lisse de Moisan
   (eoqual-core) ; seule la composante périodique est déconvoluée, la
   composante lisse (basses fréquences, quasi insensible au flou) est
-  rajoutée. Pas de marge, approximatif près des bords ;
+  rajoutée. Pas de marge, approximatif près des bords ; incompatible avec
+  ``mask`` et ``saturation`` ;
 - **``"periodic"``** : aucun traitement, exact pour une simulation par
   convolution circulaire.
+
+#### Le mode ``"unknown"`` en détail
+
+**Le problème.** Près d'un bord, chaque pixel observé mélange, par le
+flou, des points de la scène situés *hors du champ* : la scène réelle se
+poursuit au-delà de l'image, mais on n'en a aucune mesure. La FFT, elle,
+suppose que l'image se répète périodiquement : le bord droit « touche »
+le bord gauche. Le modèle ``y = h ∗ x`` est donc faux sur une bande de la
+largeur de la PSF autour de l'image.
+
+**L'idée.** On cherche une scène ``x`` **plus grande que l'image** —
+l'image plus une marge — et on n'impose l'accord avec les données que là
+où il y a des données (Almeida & Figueiredo 2013) :
+
+```
+            domaine de travail (périodique pour la FFT)
+  ┌──────────────────────────────┬──────────┐
+  │                              │          │
+  │      image observée y        │  marge   │   x est inconnue partout ;
+  │   H × W pixels : CONNUS      │ INCONNUE │   h ∗ x doit égaler y
+  │  (attache ‖h ∗ x − y‖²)      │ (aucune  │   seulement sur l'image.
+  │                              │ attache) │
+  ├──────────────────────────────┘          │
+  │              marge INCONNUE             │
+  └─────────────────────────────────────────┘
+```
+
+``min_x ‖C(h ∗ x) − y‖² + R(x)``, où ``C`` ne garde que les pixels de
+l'image. La marge de ``x`` n'est contrainte que par la régularisation
+``R`` et par la continuité avec l'image : c'est une **extrapolation** de
+la scène hors du champ, que l'on jette à la fin (recadrage sur
+``[:H, :W]``). La FFT reste utilisable, puisque le domaine de travail
+complet, lui, est traité comme périodique : la discontinuité au raccord
+tombe dans une zone où rien n'est imposé.
+
+**Mise en œuvre.** Plutôt qu'un opérateur de recadrage explicite, les
+données de la marge sont **complétées à chaque itération par le flou de
+l'estimée courante**, ``h ∗ x`` (§2.2) : le résidu y est nul, donc la
+marge ne tire pas la solution. Pour les méthodes à gradient (Landweber,
+FISTA, TV, Plug-and-Play), c'est exactement le gradient du problème
+ci-dessus ; pour les méthodes linéaires, la boucle « compléter puis
+résoudre » (``n_fill_iter = 30``) converge vers sa solution (EM).
+
+**Différence avec ``"reflect"``.** ``"reflect"`` remplit la marge de
+*données inventées* (le miroir de l'image) et demande à la solution de
+les expliquer. Or un miroir n'est pas une image floue par la PSF — le
+flou d'un bougé, par exemple, n'est pas symétrique : l'incohérence est
+amplifiée par l'inversion, d'autant plus que la FTM a des zéros.
+``"unknown"`` ne fait aucune hypothèse sur la scène hors champ.
+
+| Flou de bougé, TV (TUTORIEL.md §7) | PSNR |
+|---|---|
+| ``"periodic"`` (rien) | 18.14 dB |
+| ``"reflect"`` (marge inventée) | 27.67 dB |
+| ``"unknown"`` (marge inconnue) | 29.74 dB |
+
+**Coût.** Aucun pour les méthodes itératives ; ``n_fill_iter`` FFT
+supplémentaires pour les méthodes linéaires (0.1 à 0.3 s pour 512×256).
+
+**Quand le préférer.** Toujours acceptable ; indispensable dès que la
+FTM s'annule (bougé, défocalisation forte). Exception mesurée :
+Richardson-Lucy et Landweber, régularisés par le nombre d'itérations,
+gardent ``"reflect"`` — les données de la marge y freinent utilement
+l'amplification du bruit près des bords.
+
+**Défaut par méthode**, d'après les mesures (BENCHMARK.md §4) :
+
+| Méthodes | Défaut | Raison |
+|---|---|---|
+| ``wiener``, ``tikhonov``, ``fista_wavelet``, ``tv_primal_dual`` | ``"unknown"`` | +0.8 à +2.2 dB sur flou de bougé (OTF à zéros), au plus −0.06 dB ailleurs |
+| ``inverse``, ``richardson_lucy``, ``landweber`` | ``"reflect"`` | ``"unknown"`` y est neutre (Richardson-Lucy : +0.07 dB) ou défavorable (inverse, Landweber : jusqu'à −0.5 dB) : régularisées par un seuil ou le nombre d'itérations, elles profitent des données synthétiques de la marge |
+| ``pnp_hqs``, ``pnp_admm`` | ``"reflect"`` | marge déjà complétée (``fill_boundary``, §7) : identique à ``"unknown"`` |
 
 Un miroir simple de chaque côté (``np.pad(..., "symmetric")``) laisse une
 discontinuité au raccord périodique des deux marges. Son énergie haute
@@ -74,17 +163,56 @@ fréquence, inexpliquée par le flou, faussait les critères de réglage :
 GCV et discrépance choisissaient λ ≈ 1e-10 (Tikhonov à −33 dB). Voir
 l'annexe A.
 
-**Plug-and-Play** : la marge n'est pas une image floue par la PSF ; elle
-est traitée comme une donnée inconnue, remplacée à chaque itération par
-``H·z`` (§7).
+### 2.2 Données incomplètes : pixels masqués, saturés, marge inconnue
+
+``backends/_common.py``. Chaque pixel du domaine de travail est :
+
+- **connu** : attache aux données ``(h ∗ x − y)²`` ;
+- **inconnu** (``mask=False``, NaN, marge de ``"unknown"``) : aucune
+  attache ; la valeur initiale est celle du plus proche pixel connu ;
+- **saturé** (``saturation=L``, pixels valides ``≥ L``) : la vraie valeur
+  floue est seulement connue pour être ``≥ L`` ; attache unilatérale
+  ``min(h ∗ x − L, 0)²``.
+
+Toutes les méthodes (sauf ``wiener_unsupervised`` et ``blind_l0``, qui
+refusent ces options) passent par la même opération ``Problem.fill`` :
+les données sont **complétées par l'estimée courante**, ``h ∗ x`` aux
+pixels inconnus et ``max(h ∗ x, L)`` aux pixels saturés.
+
+- **Méthodes à gradient** (Landweber, FISTA, TV) : ``Hᵀ(Hx − fill(Hx))``
+  est exactement le gradient de l'attache masquée et unilatérale.
+- **Méthodes linéaires** (inverse, Wiener, Tikhonov) : la boucle
+  « compléter puis résoudre » (``n_fill_iter = 30``) est l'algorithme EM
+  des données manquantes (Dempster, Laird & Rubin 1977) ; son point fixe
+  vérifie ``Hᵀ M (Hx − y) + λLᵀL x = 0``, l'équation normale du problème
+  masqué. Coût : ``n_fill_iter`` FFT supplémentaires (0.1 à 0.3 s pour
+  512×256).
+- **Richardson-Lucy** : ``x ← x · Hᵀ(fill(Hx) / Hx)``, l'EM du modèle de
+  Poisson à données manquantes ; pour des bords inconnus, c'est la
+  méthode de Bertero & Boccacci (2005).
+- **Plug-and-Play** : remplissage à chaque itération (§7).
+- Le principe de discrépance (Landweber, Tikhonov) compte les seuls
+  pixels connus.
+
+Mesures (flou gaussien σ = 2 px, bruit 0.01, image d'évaluation du
+benchmark, BENCHMARK.md §4) :
+
+- **une ligne sur 25 à 0** : sans masque, l'image est détruite (−56 à
+  +15 dB selon la méthode) ; avec ``mask=``, à 0.15 dB au plus de la
+  restauration sans défaut ;
+- **flou écrêté à 85 % de son maximum** (6 % de pixels saturés) :
+  +0.3 à +1.4 dB avec ``saturation=`` (TV : 28.19 → 29.59 dB), sans
+  changement hors des zones saturées ;
+- **flou de bougé, marge inconnue** : voir le tableau du §2.1.
 
 ## 3. Méthodes linéaires
 
-Une FFT, aucune itération.
+Une FFT, aucune itération — sauf sur données incomplètes, où la boucle
+de remplissage du §2.2 en enchaîne ``n_fill_iter``.
 
 ### 3.1 `inverse` — filtre inverse tronqué
 
-``X = Y/H`` là où ``|H| ≥ threshold`` (défaut 0.05), 0 ailleurs. Sans
+``X = Y/H`` là où ``|H| ≥ threshold`` (défaut 0.15), 0 ailleurs. Sans
 modèle de bruit ; amplifie le bruit d'un facteur ``1/threshold``.
 Méthode de référence.
 
@@ -135,9 +263,13 @@ Poisson, positivité préservée. Départ : image constante (moyenne).
 - **TV** (``tv_weight``, Dey et al. 2006) : division par
   ``1 − λ div(∇x/|∇x|)`` (bornée à 0.1).
 - Image négative (fond soustrait) : décalée de son minimum, puis recalée.
-- ``n_iter = 12`` (accélérées) par défaut : meilleur compromis sur les
-  quatre flous du benchmark (12 à 20 pour un flou gaussien σ = 2 px,
-  5 à 8 pour une tache d'Airy à Nyquist).
+- Défaut ``n_iter = 50`` (accélérées) **avec** ``tv_weight = 0.005`` :
+  la TV stabilise les itérations, si bien que le résultat dépend peu de
+  leur nombre — meilleur PSNR moyen sur quatre flous et trois niveaux de
+  bruit, +1.4 dB sur l'ancien défaut (12 itérations sans TV) et jamais
+  pire (§9.1). Sans TV (``tv_weight=0``), RL pur exige d'arrêter tôt :
+  12 à 20 itérations pour un flou gaussien σ = 2 px, 5 à 8 pour une tache
+  d'Airy à Nyquist.
 
 ### 4.2 `landweber`
 
@@ -146,6 +278,16 @@ Poisson, positivité préservée. Départ : image constante (moyenne).
 itérations) : le nombre d'itérations s'adapte au flou, à 0.2-0.8 dB du
 meilleur nombre fixe sur trois des quatre flous et au-dessus sur le
 quatrième (Airy), alors qu'aucun nombre fixe ne convient aux quatre.
+
+**Pas de Barzilai-Borwein** (``acceleration=True``, Barzilai & Borwein
+1988) : ``τ_k = ‖s‖²/‖Hs‖²`` avec ``s = x_k − x_{k−1}`` — l'inverse du
+quotient de Rayleigh de ``HᵀH`` dans la direction du dernier pas, exact
+pour une attache quadratique — borné à ``[0.5, 50]/max|H|²``. Quand la
+discrépance est atteignable, elle l'est en 3 à 4 fois moins d'itérations
+pour le même PSNR (flou gaussien, σ = 0.002 : 63 → 23 itérations ;
+σ = 0.0005 : 562 → 131). Sans projection ni recherche linéaire
+non monotone, il n'est pas robuste quand le résidu plafonne au-dessus de
+``Nσ²`` (bougé à très faible bruit : −2.6 dB) : désactivé par défaut.
 
 ## 5. Choix du paramètre des méthodes linéaires
 
@@ -173,6 +315,7 @@ minimum. ``plotting.plot_gcv`` trace les deux critères.
 (PyWavelets, périodisation, coefficients de détail seulement), FISTA
 (Beck & Teboulle 2009) : seuillage doux à ``λσ/max|H|²``. Les dimensions
 de travail sont des multiples de ``2^levels`` (marge ``reflect``).
+Défauts ``lam = 0.15`` (× σ), ``levels = 5`` (§9.1).
 
 **Cycle spinning** (défaut) : la grille d'ondelettes est décalée
 aléatoirement à chaque itération (Figueiredo & Nowak 2003), ce qui
@@ -194,7 +337,11 @@ p ← Proj_{‖·‖₂ ≤ λ}(p + σ_d ∇(2x_new − x))
 Pas ``τ = 0.99/‖H‖²``, ``σ_d = ‖H‖²/16`` : la condition
 ``1/τ − 8σ_d ≥ ‖H‖²/2`` est satisfaite (``‖∇‖² ≤ 8``). Arrêt à
 ``‖Δx‖/‖x‖ < 1e-5`` ou ``n_iter = 300``. ``lam = 0.1`` (× σ) par défaut : médiane des optimums du benchmark (0.04 à 0.17).
-La décroissance de l'objectif est vérifiée par test.
+La décroissance de l'objectif est vérifiée par test, et l'optimum par une
+solution de référence indépendante : sur une image 24×24, la valeur de la
+fonctionnelle atteinte égale celle de CVXPY (solveur Clarabel) à 1e-6
+près, et la solution en diffère de moins de 5e-3
+(``tests/test_reference_cvxpy.py``, Diamond & Boyd 2016).
 
 ## 7. Plug-and-Play
 
@@ -207,9 +354,12 @@ La décroissance de l'objectif est vérifiée par test.
 - **ADMM** : même pas appliqué à ``z − u``, ``z = D(x + u, σ_k)``,
   ``u ← u + x − z``. La variable duale réduite ``u`` est remise à
   l'échelle (``u ← u·α_{k−1}/α_k``) quand le pas change.
-- **Calendrier** : ``σ_k`` décroît géométriquement de ``sigma_start``
-  (0.2 de la dynamique) à ``max(σ, sigma_min)``, en ``n_iter`` pas
-  (8 pour HQS, 12 pour ADMM).
+- **Calendrier** : ``σ_k`` décroît géométriquement de ``sigma_start`` à
+  ``max(σ, sigma_min)``, en ``n_iter`` pas (8 pour HQS, 12 pour ADMM).
+  ``sigma_start`` = 0.05 (HQS) et 0.1 (ADMM) de la dynamique : un départ
+  plus doux que le 0.2 de Zhang et al. (2021), conçu pour des niveaux de
+  bruit plus forts, gagne +1.2 dB (HQS) et +0.4 dB (ADMM) en moyenne, et
+  jusqu'à +6 dB sur flou de bougé (§9.1).
 - **λ** : 0.23 pour HQS (Zhang et al. 2021) ; 0.5 pour ADMM, meilleur
   compromis mesuré sur les quatre flous du benchmark (0.23 y donnait
   26-27 dB contre 35 dB sur bougé et défocus).
@@ -219,9 +369,13 @@ La décroissance de l'objectif est vérifiée par test.
   Apple Silicon) ou fonction ``f(image, sigma)``. Il reçoit l'image ramenée à
   [0, 1] et σ dans ces unités ; ``data_range=(0, 1)`` lui est imposé s'il
   l'accepte (sinon il le déduirait du min/max de l'itéré, qui varie).
-- **Marge** (``boundary="reflect"``) : à partir de la 2ᵉ itération, les
-  données de la marge sont remplacées par ``H·z`` (le flou de l'estimée
-  courante), les vraies données n'étant imposées que sur l'image
+- **Tout débruiteur convient** : non local (``nl_means``, ``nl_bayes``),
+  ``bilateral``, réseaux (``drunet``, ``swinir``...). Comparer plusieurs a
+  priori dans le même algorithme se fait donc en changeant un argument.
+- **Données incomplètes et marge** : à partir de la 2ᵉ itération, les
+  données sont complétées par le flou de l'estimée courante ``z`` (§2.2) :
+  pixels masqués, saturés et, avec ``boundary="reflect"``, la marge ; les
+  vraies données ne sont imposées que sur les pixels connus de l'image
   d'origine. Sans ce remplacement, le pas en ``x`` presque inverse des
   premières itérations amplifie la marge, qui n'est pas une image floue :
   sur flou de bougé, HQS-DRUNet passait de 36.0 dB (simulation
@@ -260,8 +414,8 @@ Pan et al. 2014), du grossier au fin (facteur √2, jusqu'à un support de
 **Restauration finale** : ``tv_primal_dual`` avec la PSF estimée
 (``lam = 0.4``).
 
-**Limites.** Gain de +0.5 à +3 dB sur nos scènes (contre +3 à +5 dB à
-PSF connue), variable d'une scène et d'un tirage à l'autre. La PSF n'est
+**Limites.** Gain de +0.5 à +4.2 dB selon la scène et le flou (contre
++4.5 à +6.9 dB pour la TV à PSF connue), variable d'une scène et d'un tirage à l'autre. La PSF n'est
 définie qu'à une translation près (recentrée sur son barycentre) : le
 résultat peut être décalé d'une fraction de pixel. Choisir ``psf_size``
 proche de l'étendue attendue du flou : un support trop grand dégrade
@@ -293,6 +447,32 @@ même que dans eoqual-denoising.
 **Sur-apprentissage** : régler sur une image, évaluer sur une autre
 (``examples/benchmark.py --optimize`` : moitiés gauche et droite).
 
+### 9.1 Choix des réglages par défaut (0.3.0)
+
+Un défaut doit valoir pour tous les cas, pas pour un seul : il est choisi
+par **PSNR moyen sur 12 cas** — quatre flous (gaussien σ = 2 px, Airy à
+Nyquist, défocalisation r = 3 px, bougé 9 px) × trois bruits
+(σ = 0.005, 0.01, 0.02) — sur l'image de **réglage** (moitié gauche
+d'« astronaut » ; 256×256 pour le Plug-and-Play et l'aveugle), par une
+grille sur les paramètres principaux. Le choix est ensuite **vérifié
+sur l'image d'évaluation** (moitié droite, autres tirages de bruit) ;
+un réglage qui ne s'y confirme pas est rejeté.
+
+| Méthode | Ancien défaut | Nouveau défaut | Gain moyen (évaluation) | Pire cas |
+|---|---|---|---|---|
+| ``inverse`` | ``threshold = 0.05`` | ``0.15`` | +4.55 dB | −1.14 dB |
+| ``richardson_lucy`` | 12 it., ``tv_weight = 0`` | 50 it., ``tv_weight = 0.005`` | +1.38 dB | +0.48 dB |
+| ``fista_wavelet`` | ``lam = 0.2``, ``levels = 3`` | ``0.15``, ``5`` | +0.24 dB | −0.40 dB |
+| ``pnp_hqs`` | ``sigma_start = 0.2`` | ``0.05`` | +1.18 dB | −0.73 dB |
+| ``pnp_admm`` | ``sigma_start = 0.2`` | ``0.1`` | +0.37 dB | −0.30 dB |
+
+Inchangés, déjà à l'optimum de la grille : ``tikhonov`` (laplacien,
+GCV), ``landweber`` (discrépance, sans Barzilai-Borwein),
+``tv_primal_dual`` (``lam = 0.1``), ``blind_l0`` (``lam_l0 = 4e-3``,
+``lam = 0.4``). **Rejeté** : ``wiener`` avec β = 2.5 fixe (+0.32 dB sur
+l'image de réglage, mais −0.16 dB sur l'image d'évaluation) — β reste
+ajusté sur chaque image.
+
 ## 10. PSF, simulation, figures
 
 - ``psf.py`` : ``gaussian_psf`` (anisotrope, rotation), ``airy_psf``
@@ -301,6 +481,22 @@ même que dans eoqual-denoising.
   ``disk_psf`` (défocalisation) et ``motion_psf`` (bougé) anti-crénelées
   par sur-échantillonnage ; ``center_psf`` (barycentre au centre d'un
   support impair, interpolation spline).
+- **PSF d'instrument** : ``system_psf(wavelength, diameter, focal_length,
+  pixel_pitch, obscuration=, defocus_radius=, motion_length=,
+  motion_angle=, jitter_sigma=)``. Sur une grille ``oversample`` fois plus
+  fine (7 par défaut) : diffraction d'une pupille annulaire
+  (``annular_airy`` : ``[2J1(v)/v − ε²·2J1(εv)/(εv)]²/(1 − ε²)²``, Born &
+  Wolf ; Mahajan), convolée par la défocalisation (disque), le filé
+  (segment) et le jitter (gaussienne), puis **intégrée sur la surface de
+  chaque pixel** (sommation par blocs) — d'où la FTM ``sinc(πf)`` du
+  détecteur. Rayon d'Airy en pixels : ``eoqual.core.psf.airy_radius_px``
+  (``1.22 λf/(Dp)``). Validation : FTM = FTM de diffraction × sinc à 1 %
+  près (``tests/test_socle.py``). Les ailes de la tache d'Airy décroissent
+  en 1/r³ : avec le support par défaut (quatre anneaux), la FTM aux
+  fréquences moyennes est surestimée d'environ 2 % ; 121 pixels la
+  ramènent à 0.8 %.
+- ``combine_psfs`` : convolution de PSF (chaîne optique ⊛ détecteur ⊛
+  bougé) ; les variances s'ajoutent.
 - ``simulate.py`` : ``blur`` (circulaire ou miroir), ``add_noise``
   (gaussien, Poisson par ``gain``), ``simulate_observation``.
 - ``plotting.py`` (Plotly via eoqual-viz) : ``plot_restoration``
@@ -317,25 +513,54 @@ connus).
 
 | Fichier | Contenu |
 |---|---|
-| ``test_socle.py`` | PSF (somme, centrage, formes), contrôles, simulation, adjoints ``∇``/``div`` et ``H``/``Hᵀ``, bords (aller-retour, continuité périodique) |
+| ``test_socle.py`` | PSF (somme, centrage, formes), PSF système (FTM de diffraction × pixel, obturation, filé), contrôles, simulation, adjoints ``∇``/``div`` et ``H``/``Hᵀ``, bords (aller-retour, continuité périodique) |
+| ``test_incomplete.py`` | lignes mortes masquées, NaN, saturation, marge inconnue sur flou de bougé, états des pixels, pas de Barzilai-Borwein |
+| ``test_reference_cvxpy.py`` | TV primal-duale = optimum calculé par CVXPY (sauté sans CVXPY) |
 | ``test_methods.py`` | contrat d'appel, gain minimal par méthode, PSF Dirac, invariance d'échelle, bords, bandes, cas d'erreur, propriétés (Wiener = Tikhonov identité, accélération RL, arrêt de Landweber, décroissance TV) |
 | ``test_tuning.py`` | GCV proche de l'oracle, discrépance, L-curve, espaces de recherche, optimisation (avec et sans référence) |
 | ``test_pnp.py`` | débruiteur fourni, ``tv_chambolle``, ``nl_ridge`` ; ``drunet`` (marqueur ``deep``) |
 | ``test_blind.py`` | PSF estimée plus proche de la vraie que le Dirac, gain positif |
-| ``test_plotting.py``, ``test_examples.py`` | figures, exemples |
+| ``test_plotting.py``, ``test_examples.py`` | figures, exemples (dont le tutoriel) |
 
 ## 12. Évolutions envisagées
 
-- **v0.2.0** : DPIR (débruiteur DRUNet entraîné pour le Plug-and-Play,
-  calendrier dédié) ; calcul sur GPU (PyTorch) des méthodes itératives.
+- **A priori de diffusion** dans le Plug-and-Play : DiffPIR (Zhu et al.
+  2023), échantillonnage a posteriori DPS (Chung et al. 2023), via deepinv
+  (BSD-3-Clause, extra ``deep``) — comme les projets « ADMM deconvolution
+  with diffusion prior » d'EE367 (Stanford). *Pourquoi pas encore* : poids
+  pré-entraînés de plusieurs centaines de Mo (licences à vérifier une à
+  une), 100 à 1000 passes de réseau par image (minutes sur CPU, GPU
+  quasi indispensable), réseaux appris sur des photographies, pas sur
+  des images de télédétection, et résultat **stochastique** pouvant
+  « inventer » des détails plausibles — inacceptable sans protocole de
+  validation pour une mesure quantitative.
+- **DPIR** (débruiteur DRUNet et calendrier dédiés) et **calcul sur GPU**
+  (PyTorch) des méthodes itératives.
+- **Bruit de Poisson** : déconvolution Poisson + TV par ADMM (PIDAL,
+  Figueiredo & Bioucas-Dias 2010) pour les images à faible flux ;
+  stabilisation de variance avant les méthodes à bruit gaussien (comme
+  ``vst_denoise`` d'eoqual-denoising). *Pourquoi pas encore* : le calcul
+  est léger, mais l'interface ne l'est pas — l'attache de Poisson exige
+  des données en photo-électrons (gain, offset, bruit de lecture du
+  capteur, comme la PTC d'eoqual-measure), un modèle poisson-gaussien
+  pour être réaliste, et un benchmark à faible flux dédié ;
+  ``richardson_lucy(tv_weight=...)`` couvre déjà le cas Poisson + TV.
+  Candidat naturel pour la prochaine version.
+- **SPITFIR(e)** (Prigent et al. 2023) : a priori mêlant hessienne et
+  parcimonie, rapide, conçu pour la microscopie de fluorescence 3D.
+  *Pourquoi pas encore* : à réimplémenter depuis l'article (le code de
+  référence, sdeconv, n'est pas repris), et son intérêt sur des scènes
+  d'observation de la Terre — texturées, sans fond noir — reste à
+  démontrer face à la TV et au Plug-and-Play.
+- **Richardson-Lucy à pas adaptatif** (gradient projeté mis à l'échelle,
+  SGP, Bonettini, Zanella & Zanni 2009), équivalent pour RL du pas de
+  Barzilai-Borwein de Landweber.
 - Restauration vers une **FTM cible** (filtre qui ramène la FTM du
   système à une FTM de référence plutôt qu'à 1) : à étudier.
-- Bruit poisson-gaussien : stabilisation de variance avant les méthodes
-  à bruit gaussien (comme ``vst_denoise`` d'eoqual-denoising).
 - PSF variable dans le champ (déconvolution par tuiles, eoqual-core
   ``tiling``).
 - Aveugle : sélection des contours saillants (Cho & Lee 2009), a priori
-  sur les intensités (Pan et al. 2014).
+  sur les intensités (Pan et al. 2014), pixels saturés (étoiles, reflets).
 
 ---
 
@@ -379,3 +604,19 @@ scènes synthétiques.
    déplacés dans eoqual-core 0.2.0 ; galerie d'images et courbes
    multiples ajoutées à eoqual-viz 0.2.0. ``gaussian_kernel``
    (eoqual-measure) laissé sur place : un seul utilisateur.
+7. **Données incomplètes (0.3.0).** Masque de pixels valides, saturation
+   et bords inconnus traités par une seule opération de remplissage
+   (§2.2), plutôt que trois mécanismes. L'attache unilatérale pour la
+   saturation vient d'un prototype personnel qui l'optimisait par L-BFGS ;
+   le remplissage la rend compatible avec toutes les méthodes, y compris
+   les linéaires (EM). Un masque des pixels saturés seul (sans contrainte
+   ``≥ L``) est aussi possible via ``mask=`` ; la contrainte unilatérale
+   récupère davantage d'information. Défaut ``boundary="unknown"`` pour
+   les quatre méthodes qui en profitent (§2.1).
+8. **Pas de Barzilai-Borwein pour Landweber (0.3.0)**, d'après l'idée de
+   BBii-Decon (gradient projeté de Barzilai-Borwein) : implémenté depuis
+   Barzilai & Borwein (1988), optionnel (§4.2).
+9. **PSF d'instrument (0.3.0)** : ``system_psf`` d'après un prototype
+   personnel de classes optiques (WFE → PSF → FTM) ; rayon d'Airy en
+   pixels déplacé dans eoqual-core 0.3.0 (``airy_radius_px``, aussi
+   présent dans eoqual-phaseretrieval).

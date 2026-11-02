@@ -18,6 +18,11 @@ Benchmark des méthodes (tableaux de BENCHMARK.md).
 ``--optimize`` (extra ``optim``) : optimisation bayésienne du PSNR sur
 l'image de réglage (``N_CALLS`` évaluations), puis évaluation des
 paramètres trouvés sur l'autre moitié.
+
+Troisième tableau, **données incomplètes** (flou gaussien σ = 2 px) :
+saturation (flou écrêté à 85 % de son maximum), lignes mortes (une ligne
+sur 25 à 0), chacune sans puis avec ``saturation=`` / ``mask=`` ; et flou
+de bougé avec ``boundary="reflect"`` puis ``"unknown"``.
 """
 from __future__ import annotations
 
@@ -89,6 +94,33 @@ def main() -> None:
     for m, r in rows.items():
         emit(f"| `{m}` | " + " | ".join(f"{p:.2f} / {s:.3f}" for p, s in r.values())
              + f" | {np.mean(times[m]):.1f} |")
+
+    from eoqual.deconvolution.simulate import add_noise, blur
+
+    emit()
+    emit("### Données incomplètes — PSNR (dB) sur l'image d'évaluation")
+    emit()
+    emit("| Méthode | saturation : ignorée → `saturation=` | lignes mortes : ignorées → `mask=` | bougé : `reflect` → `unknown` |")
+    emit("|---|---|---|---|")
+    gpsf, mpsf = PSFS["gaussienne σ=2"], PSFS["bougé 9 px"]
+    yb = blur(test, gpsf, "reflect")
+    level = 0.85 * yb.max()
+    y_sat = np.minimum(add_noise(yb, SIGMA, seed=1), level)
+    y_ok = simulate_observation(test, gpsf, SIGMA, boundary="reflect", seed=1)
+    mask = np.ones_like(y_ok, dtype=bool)
+    mask[::25, :] = False
+    y_dead = np.where(mask, y_ok, 0.0)
+    y_mot = simulate_observation(test, mpsf, SIGMA, boundary="reflect", seed=1)
+    for m in ["wiener", "tikhonov", "richardson_lucy", "landweber", "fista_wavelet", "tv_primal_dual", "pnp_hqs"]:
+        a = psnr(test, deconvolve(y_sat, gpsf, m, sigma=SIGMA))
+        b = psnr(test, deconvolve(y_sat, gpsf, m, sigma=SIGMA, saturation=level))
+        c = psnr(test, deconvolve(y_dead, gpsf, m, sigma=SIGMA))
+        d = psnr(test, deconvolve(y_dead, gpsf, m, sigma=SIGMA, mask=mask))
+        e = psnr(test, deconvolve(y_mot, mpsf, m, sigma=SIGMA, boundary="reflect"))
+        f = psnr(test, deconvolve(y_mot, mpsf, m, sigma=SIGMA, boundary="unknown"))
+        emit(f"| `{m}` | {a:.2f} → {b:.2f} | {c:.2f} → {d:.2f} | {e:.2f} → {f:.2f} |")
+    emit()
+    emit(f"Pixels saturés : {(y_sat >= level).mean() * 100:.1f} %.")
 
     if args.optimize:
         from eoqual.deconvolution.tuning import optimize_parameters

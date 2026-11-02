@@ -5,6 +5,6 @@
     {"name": "levels", "type": "int", "low": 2, "high": 5},
     {"name": "wavelet", "type": "categorical", "categories": ["db2", "db4", "sym8"]},
   ],
-  "initial_guess": {"lam": 0.2, "levels": 3, "wavelet": "db4"},
+  "initial_guess": {"lam": 0.15, "levels": 5, "wavelet": "db4"},
   "fixed": {"n_iter": 100},
 }

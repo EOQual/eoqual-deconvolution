@@ -12,7 +12,12 @@ PSF mesurée.
   uniforme) ;
 - :func:`motion_psf` : bougé linéaire uniforme ;
 - :func:`center_psf` : ramène le barycentre d'une PSF au centre d'un
-  support de taille impaire.
+  support de taille impaire ;
+- :func:`system_psf` : PSF d'un instrument à partir de ses paramètres
+  physiques (diffraction d'une pupille annulaire, défocalisation, filé,
+  jitter, intégration sur le pixel) ;
+- :func:`combine_psfs` : convolution de plusieurs PSF (chaîne
+  d'acquisition).
 
 Gaussienne, Airy et Moffat sont **intégrées sur la surface du pixel**
 (:func:`eoqual.core.psf.integrated_profile`), comme le ferait un
@@ -24,9 +29,13 @@ from __future__ import annotations
 import numpy as np
 from scipy import ndimage
 
-from eoqual.core.psf import integrated_profile
+from eoqual.core.kernel import convolve_circular
+from eoqual.core.psf import airy_radius_px, integrated_profile
 
-__all__ = ["gaussian_psf", "airy_psf", "moffat_psf", "disk_psf", "motion_psf", "center_psf"]
+__all__ = [
+    "gaussian_psf", "airy_psf", "moffat_psf", "disk_psf", "motion_psf", "center_psf",
+    "system_psf", "combine_psfs", "annular_airy",
+]
 
 
 def _odd(n: float) -> int:
@@ -194,3 +203,138 @@ def center_psf(psf: np.ndarray, size: int | None = None) -> np.ndarray:
     oy, ox = (canvas.shape[0] - n) // 2, (canvas.shape[1] - n) // 2
     out = np.clip(shifted[oy : oy + n, ox : ox + n], 0, None)
     return out / out.sum()
+
+
+def annular_airy(r: np.ndarray, first_zero_radius: float, obscuration: float = 0.0) -> np.ndarray:
+    """
+    Intensité de diffraction d'une pupille annulaire, normalisée à 1 au
+    centre (Born & Wolf 1999 ; Mahajan 2001, pupilles annulaires) :
+
+    ``I(v) = [2J1(v)/v − ε² · 2J1(εv)/(εv)]² / (1 − ε²)²``,
+    ``v = 3.8317 r / r₀``, ``ε`` obturation centrale (rapport des diamètres).
+
+    Parameters
+    ----------
+    r : np.ndarray
+        Distance au centre [pixels].
+    first_zero_radius : float
+        Rayon ``r₀`` du premier anneau noir de la pupille **pleine**
+        (``1.22 λ f / (D p)``, :func:`eoqual.core.psf.airy_radius_px`).
+    obscuration : float, default 0
+        Obturation centrale ``ε`` dans [0, 1[ (miroir secondaire d'un
+        télescope de Cassegrain, typiquement 0.2 à 0.4).
+    """
+    from scipy.special import j1
+
+    if not 0.0 <= obscuration < 1.0:
+        raise ValueError("obscuration doit être dans [0, 1[.")
+    v = 3.8317059702075125 * np.asarray(r, dtype=np.float64) / first_zero_radius
+    v = np.where(v == 0, 1e-12, v)
+    amp = 2 * j1(v) / v
+    if obscuration > 0:
+        ev = obscuration * v
+        amp = amp - obscuration**2 * 2 * j1(ev) / ev
+    return amp**2 / (1.0 - obscuration**2) ** 2
+
+
+def combine_psfs(*psfs: np.ndarray) -> np.ndarray:
+    """
+    Convolution de plusieurs PSF centrées (optique ⊛ détecteur ⊛ bougé...),
+    somme 1, support impair égal à la somme des supports.
+    """
+    if not psfs:
+        raise ValueError("Au moins une PSF attendue.")
+    n = _odd(sum(np.shape(h)[0] for h in psfs))
+    out = np.zeros((n, n))
+    out[n // 2, n // 2] = 1.0
+    for h in psfs:
+        h = np.asarray(h, dtype=np.float64)
+        out = convolve_circular(out, h / h.sum())
+    out = np.clip(out, 0, None)
+    return out / out.sum()
+
+
+def system_psf(
+    wavelength: float,
+    diameter: float,
+    focal_length: float,
+    pixel_pitch: float,
+    *,
+    obscuration: float = 0.0,
+    defocus_radius: float = 0.0,
+    motion_length: float = 0.0,
+    motion_angle: float = 0.0,
+    jitter_sigma: float = 0.0,
+    size: int | None = None,
+    oversample: int = 7,
+) -> np.ndarray:
+    """
+    PSF d'un instrument d'observation, sur la grille du détecteur, somme 1.
+
+    Chaîne modélisée (convolutions, calculées sur une grille ``oversample``
+    fois plus fine puis intégrées sur la surface de chaque pixel) :
+
+    1. **diffraction** d'une pupille circulaire de diamètre ``D``, avec
+       obturation centrale ``ε`` (:func:`annular_airy`) ;
+    2. **défocalisation** géométrique (disque de rayon ``defocus_radius``) ;
+    3. **filé** linéaire uniforme pendant l'intégration (bougé, défilement
+       mal compensé d'un capteur TDI) ;
+    4. **jitter** (micro-vibrations) gaussien ;
+    5. **intégration sur le pixel** (pixel carré de facteur de remplissage
+       1) — c'est elle qui donne la FTM ``sinc(πf)`` du détecteur, 0.64 à
+       Nyquist.
+
+    Parameters
+    ----------
+    wavelength, diameter, focal_length, pixel_pitch : float
+        Longueur d'onde, diamètre de pupille, focale, pas pixel (même unité).
+    obscuration : float, default 0
+        Obturation centrale (rapport des diamètres).
+    defocus_radius : float, default 0
+        Rayon du disque de défocalisation [pixels].
+    motion_length : float, default 0
+        Longueur du filé [pixels] ; ``motion_angle`` sa direction [rad].
+    jitter_sigma : float, default 0
+        Écart-type du jitter [pixels].
+    size : int, optional
+        Côté du support (impair) ; défaut : quatre anneaux noirs plus les
+        étendues du filé, de la défocalisation et du jitter.
+    oversample : int, default 7
+        Sur-échantillonnage (impair) de la grille de calcul.
+
+    Examples
+    --------
+    Instrument échantillonné à Nyquist (``λ f / (D p) = 2``), obturation 0.3,
+    filé d'un demi-pixel :
+
+    >>> h = system_psf(0.55e-6, 0.3, 3.0, 11e-6, obscuration=0.3, motion_length=0.5)
+    """
+    if oversample < 1 or oversample % 2 == 0:
+        raise ValueError("oversample doit être un entier impair ≥ 1.")
+    for name, v in (("defocus_radius", defocus_radius), ("motion_length", motion_length),
+                    ("jitter_sigma", jitter_sigma)):
+        if v < 0:
+            raise ValueError(f"{name} doit être positif ou nul.")
+    r0 = airy_radius_px(wavelength, diameter, focal_length, pixel_pitch)
+    if size is None:
+        size = 2 * np.ceil(4 * r0 + motion_length / 2 + defocus_radius + 3 * jitter_sigma) + 3
+    n = _odd(size)
+    m = n * oversample
+    c = (m - 1) / 2.0
+    yy, xx = np.indices((m, m), dtype=np.float64)
+    r = np.hypot(yy - c, xx - c) / oversample
+    fine = annular_airy(r, r0, obscuration)
+    kernels = []
+    if defocus_radius > 0:
+        kernels.append(disk_psf(defocus_radius * oversample))
+    if motion_length > 0:
+        kernels.append(motion_psf(motion_length * oversample, motion_angle))
+    if jitter_sigma > 0:
+        kernels.append(gaussian_psf(jitter_sigma * oversample))
+    for k in kernels:
+        if k.shape[0] > m:
+            raise ValueError("size trop petit pour le filé, la défocalisation ou le jitter demandés.")
+        fine = convolve_circular(fine, k)
+    fine = np.clip(fine, 0, None)
+    det = fine.reshape(n, oversample, n, oversample).sum(axis=(1, 3))
+    return det / det.sum()

@@ -26,7 +26,9 @@ Convention du projet : une méthode = une fonction
 dans `src/eoqual/deconvolution/backends/`, qui prépare le problème par
 `backends._common.setup` (contrôles, bords, opérateur de flou), exprime
 `sigma` dans les unités de l'image, donne ses paramètres sans dimension
-ou en multiples de σ, et n'a **pas de paramètre nommé `method`**
+ou en multiples de σ, accepte `mask=` et `saturation=` (en passant son
+attache aux données par `Problem.fill` / `Problem.gradient_data`, voir
+`REFERENCE_TECHNIQUE.md` §2.2) ou les refuse explicitement, et n'a **pas de paramètre nommé `method`**
 (réservé au dispatcher). Elle est déclarée dans
 `config.py::METHODS_CONFIGS` et `runner.py::_DISPATCH`, sa référence est
 ajoutée à `BIBLIOGRAPHY.md`, et ses paramètres réglables reçoivent un

@@ -10,7 +10,7 @@ EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("name", ["quickstart", "tuning", "blind"])
+@pytest.mark.parametrize("name", ["quickstart", "tuning", "blind", "tutorial"])
 def test_example_runs(name, tmp_path):
     env = dict(os.environ, EOQUAL_EXAMPLES_OUT=str(tmp_path), EOQUAL_EXAMPLES_SIZE="128",
                EOQUAL_EXAMPLES_N_CALLS="4")

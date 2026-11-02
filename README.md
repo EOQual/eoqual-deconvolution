@@ -10,6 +10,8 @@ variationnelles, Plug-and-Play) ou estimée (déconvolution aveugle),
 traitement des bords, réglage automatique des paramètres. Voir
 **[REFERENCE_TECHNIQUE.md](REFERENCE_TECHNIQUE.md)** pour le détail de
 chaque méthode (principe, implémentation, limites),
+**[TUTORIEL.md](TUTORIEL.md)** pour une progression pas à pas, du modèle
+direct au Plug-and-Play et aux données réelles,
 **[BENCHMARK.md](BENCHMARK.md)** pour la comparaison chiffrée,
 **[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)** pour l'audit des
 licences et **[BIBLIOGRAPHY.md](BIBLIOGRAPHY.md)** pour les publications
@@ -79,6 +81,18 @@ x = deconvolve(blurred, psf, "pnp_hqs", sigma=0.01, denoiser="drunet")   # extra
 `sigma` est l'écart-type du bruit **dans les unités de l'image** ; s'il
 est omis, il est estimé sur l'image (Donoho & Johnstone).
 
+**Données réelles** : pixels saturés, pixels manquants (no-data, lignes
+mortes, NaN), PSF d'instrument :
+
+```python
+x = deconvolve(blurred, psf, "tv_primal_dual", sigma=0.01, saturation=0.95)
+x = deconvolve(blurred, psf, "tv_primal_dual", sigma=0.01, mask=valid)   # valid : True = pixel valide
+
+from eoqual.deconvolution.psf import system_psf
+psf = system_psf(wavelength=0.55e-6, diameter=0.3, focal_length=12.0, pixel_pitch=11e-6,
+                 obscuration=0.3, motion_length=1.0)   # diffraction, filé, intégration pixel
+```
+
 **Déconvolution aveugle** (PSF inconnue) :
 
 ```python
@@ -107,6 +121,7 @@ Exemples prêts à l'emploi dans `examples/` :
 | Script | Usage |
 |---|---|
 | `quickstart.py` | simuler, déconvoluer avec quatre méthodes, figure comparative |
+| `tutorial.py` | chiffres et figures de [TUTORIEL.md](TUTORIEL.md) |
 | `tuning.py` | GCV, discrépance, optimisation avec et sans référence |
 | `blind.py` | déconvolution aveugle d'un flou de bougé |
 | `benchmark.py` | tableaux de `BENCHMARK.md` |
@@ -135,10 +150,11 @@ scikit-image).
 
 Résultats indicatifs (PSNR, image d'évaluation 512×256, bruit 0.01,
 réglages par défaut ; détail dans [BENCHMARK.md](BENCHMARK.md)) :
-`tv_primal_dual` est le meilleur compromis du socle (+3 à +6 dB sur
-l'image observée, 2 s) ; `pnp_admm` gagne encore 0.4 à 2.5 dB, au prix
+`tv_primal_dual` est le meilleur compromis du socle (+4.5 à +6.9 dB sur
+l'image observée, 2 s) ; `pnp_admm` gagne encore 0.5 à 2.4 dB, au prix
 d'un temps de calcul 10 fois plus long ; les méthodes linéaires sont
-instantanées (+2 à +4 dB) et sont le bon point de départ.
+instantanées (+2.5 à +4.6 dB) et sont le bon point de départ. Signaler
+les pixels manquants (`mask=`) est indispensable sur données réelles.
 
 ---
 
@@ -152,10 +168,17 @@ instantanées (+2 à +4 dB) et sont le bon point de départ.
 - **PSF** : 2D, normalisée en interne à une somme de 1, centre en
   `(kh // 2, kw // 2)` (préférer une taille impaire ;
   `psf.center_psf` recentre une PSF mesurée).
-- **Bords** (`boundary=`) : `"reflect"` par défaut (prolongement miroir
-  continu et périodique, recadré ensuite), `"perdecomp"` (décomposition
-  périodique + lisse), `"periodic"` (aucun traitement, exact pour une
-  simulation circulaire).
+- **Bords** (`boundary=`) : `"unknown"` (la scène est cherchée sur un
+  domaine plus grand que l'image et seule l'image est imposée ; la marge,
+  inconnue, est jetée à la fin — schéma : REFERENCE_TECHNIQUE.md §2.1 ;
+  défaut de `wiener`, `tikhonov`, `fista_wavelet`, `tv_primal_dual`),
+  `"reflect"` (prolongement miroir continu et périodique ; défaut des
+  autres méthodes), `"perdecomp"` (décomposition périodique + lisse),
+  `"periodic"` (aucun traitement, exact pour une simulation circulaire).
+- **Données incomplètes** : `mask=` (pixels valides à `True` ; les NaN
+  sont alors acceptés) et `saturation=` (seuil : attache aux données
+  unilatérale) pour toutes les méthodes sauf `wiener_unsupervised` et
+  `blind_l0` (REFERENCE_TECHNIQUE.md §2.2).
 - **Paramètres sans dimension ou en multiples de σ** : les résultats ne
   dépendent pas des unités de l'image (8 bits, 12 bits, réflectance),
   vérifié par test.
@@ -166,7 +189,7 @@ instantanées (+2 à +4 dB) et sont le bon point de départ.
 
 | Module | Usage |
 |---|---|
-| [eoqual-core](https://github.com/EOQual/eoqual-core) | `psf2otf`, convolution circulaire, estimation du bruit, profils de PSF intégrés sur le pixel, décomposition périodique + lisse |
+| [eoqual-core](https://github.com/EOQual/eoqual-core) | `psf2otf`, convolution circulaire, estimation du bruit, profils de PSF intégrés sur le pixel, rayon d'Airy en pixels, décomposition périodique + lisse |
 | [eoqual-metrics](https://github.com/EOQual/eoqual-metrics) | PSNR, SSIM, indice de netteté SI (réglage, benchmark, figures) |
 | [eoqual-viz](https://github.com/EOQual/eoqual-viz) | galerie d'images et courbes Plotly |
 | [eoqual-denoising](https://github.com/EOQual/eoqual-denoising) | débruiteurs du Plug-and-Play (extras `pnp`, `deep`) |

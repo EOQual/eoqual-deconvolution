@@ -17,11 +17,19 @@ l'image restaurée. Le paramètre ``boundary`` choisit la parade :
   périodique est déconvoluée, la composante lisse (basses fréquences,
   quasi insensible au flou) est rajoutée ensuite. Aucune marge, donc
   moins coûteux, mais approximatif près des bords ;
+- ``"unknown"`` : même marge que ``"reflect"``, mais traitée comme une
+  donnée **inconnue** : seule l'image d'origine contraint la solution, la
+  marge est complétée à chaque itération par le flou de l'estimée courante
+  (Almeida & Figueiredo 2013 ; voir :mod:`eoqual.deconvolution.backends._common`).
+  Le plus exact ; un peu plus lent pour les méthodes linéaires (itérations
+  de remplissage) ;
 - ``"periodic"`` : aucun traitement — exact pour une image synthétique
   floutée par convolution circulaire (:func:`eoqual.deconvolution.simulate.blur`).
 
 Référence : L. Moisan, "Periodic plus smooth image decomposition",
-JMIV 39(2), 2011.
+JMIV 39(2), 2011 ; M. S. C. Almeida, M. A. T. Figueiredo, "Deconvolving
+images with unknown boundaries using the alternating direction method of
+multipliers", IEEE TIP 22(8), 2013.
 """
 from __future__ import annotations
 
@@ -36,7 +44,7 @@ from eoqual.core.kernel import psf2otf
 
 __all__ = ["BOUNDARIES", "BlurOperator", "Domain", "prepare_domain", "gradient", "divergence"]
 
-BOUNDARIES = ("reflect", "perdecomp", "periodic")
+BOUNDARIES = ("reflect", "unknown", "perdecomp", "periodic")
 
 
 class BlurOperator:
@@ -116,7 +124,7 @@ def prepare_domain(
     psf_shape : tuple
         Forme de la PSF (fixe la marge de ``"reflect"``).
     boundary : str
-        ``"reflect"``, ``"perdecomp"`` ou ``"periodic"``.
+        ``"reflect"``, ``"unknown"``, ``"perdecomp"`` ou ``"periodic"``.
     multiple : int
         Avec ``"reflect"``, les dimensions de travail sont des multiples
         de ``multiple`` (transformées en ondelettes à plusieurs niveaux).
@@ -129,7 +137,7 @@ def prepare_domain(
     if boundary == "perdecomp":
         p, s = perdecomp(image)
         return Domain(np.asarray(p, dtype=np.float64), lambda x: x + s)
-    # reflect : marge ≥ 2 tailles de PSF au total, puis taille rapide pour la FFT.
+    # reflect / unknown : marge ≥ 2 tailles de PSF au total, puis taille rapide pour la FFT.
     ty = _fast_len(ny + 2 * psf_shape[0], multiple)
     tx = _fast_len(nx + 2 * psf_shape[1], multiple)
     padded = _periodic_mirror_extension(_periodic_mirror_extension(image, ty, 0), tx, 1)

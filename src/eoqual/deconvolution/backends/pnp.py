@@ -86,27 +86,31 @@ def _schedule(sigma_start: float, sigma_end: float, n_iter: int) -> np.ndarray:
 
 def _pnp(
     image, psf, sigma, *, admm, denoiser, denoiser_kwargs, lam, n_iter, sigma_start, sigma_min,
-    data_range, boundary, callback, fill_boundary=True,
+    data_range, boundary, callback, fill_boundary=True, mask=None, saturation=None,
 ):
     if n_iter < 1:
         raise ValueError("n_iter doit être ≥ 1.")
-    s = resolve_sigma(image, sigma)
-    pb = setup(image, psf, boundary)
+    pb = setup(image, psf, boundary, mask=mask, saturation=saturation)
+    s = resolve_sigma(pb.domain.restore(pb.y), sigma)
     y, lo, scale = to_unit_range(pb.y, data_range)
+    level = pb.level_in(lo, scale)
     s_u = s / scale
     den = make_denoiser(denoiser, **(denoiser_kwargs or {}))
     sigmas = _schedule(sigma_start, max(s_u, sigma_min), n_iter)
 
     H, abs2 = pb.op.otf, pb.op.abs2
-    # Marge (boundary="reflect") traitée comme donnée inconnue : remplacée à
-    # chaque itération par H·z, le flou de l'estimée courante (les vraies
-    # données ne sont imposées que sur l'image d'origine). Sans cela, la
-    # marge, qui n'est pas une image floue par la PSF, est amplifiée par le
-    # pas en x presque inverse des premières itérations.
+    # Données complétées à chaque itération par le flou de l'estimée courante
+    # z : pixels inconnus ou saturés, et marge de boundary="reflect" (sauf
+    # fill_boundary=False). La marge n'est pas une image floue par la PSF ;
+    # sans ce remplacement, le pas en x presque inverse des premières
+    # itérations l'amplifie.
     ny, nx = np.shape(image)
-    inside = np.zeros(y.shape, dtype=bool)
-    inside[:ny, :nx] = True
-    fill = fill_boundary and boundary == "reflect" and not inside.all()
+    known = pb.known
+    if boundary == "reflect" and fill_boundary:
+        known = np.zeros(y.shape, dtype=bool)
+        known[:ny, :nx] = True if pb.known is None else pb.known[:ny, :nx]
+    filler = type(pb)(pb.y, pb.psf, pb.op, pb.domain, known, pb.saturated, pb.level)
+    fill = filler.incomplete and not filler.known.all() or filler.saturated is not None
     HtY = np.conj(H) * spfft.fft2(y)
     z = y.copy()
     u = np.zeros_like(y)
@@ -119,7 +123,7 @@ def _pnp(
         alpha_prev = alpha
         target = z - u if admm else z
         if fill and k > 0:
-            y_fill = np.where(inside, y, pb.op.forward(z))
+            y_fill = filler.fill(pb.op.forward(z), y, level)
             HtY = np.conj(H) * spfft.fft2(y_fill)
         x = spfft.ifft2((HtY + alpha * spfft.fft2(target)) / (abs2 + alpha)).real
         v = x + u if admm else x
@@ -140,11 +144,13 @@ def pnp_hqs_deconvolve(
     denoiser_kwargs: dict | None = None,
     lam: float = 0.23,
     n_iter: int = 8,
-    sigma_start: float = 0.2,
+    sigma_start: float = 0.05,
     sigma_min: float = 0.002,
     data_range: tuple[float, float] | None = None,
     fill_boundary: bool = True,
     boundary: str = "reflect",
+    mask: np.ndarray | None = None,
+    saturation: float | None = None,
     callback: Callback = None,
 ) -> np.ndarray:
     """
@@ -164,8 +170,11 @@ def pnp_hqs_deconvolve(
         défloutage).
     n_iter : int, default 8
         Nombre d'itérations, donc d'appels au débruiteur.
-    sigma_start : float, default 0.2
-        Niveau initial du débruiteur, en fraction de la dynamique.
+    sigma_start : float, default 0.05
+        Niveau initial du débruiteur, en fraction de la dynamique. 0.05 :
+        meilleur compromis mesuré (+1.2 dB en moyenne sur 0.2, jusqu'à
+        +6 dB sur flou de bougé ; BENCHMARK.md) ; 0.2 (Zhang et al. 2021)
+        convient mieux à un bruit fort.
     sigma_min : float, default 0.002
         Plancher du niveau final (fraction de la dynamique), pour une
         image presque sans bruit.
@@ -177,13 +186,17 @@ def pnp_hqs_deconvolve(
         +5 dB) ; coûte 0.5 à 1 dB sur un flou gaussien ou une
         défocalisation (REFERENCE_TECHNIQUE.md §7).
     boundary : str, default "reflect"
+    mask : np.ndarray of bool, optional
+        Pixels valides (``True``) ; les autres (et les NaN) sont inconnus.
+    saturation : float, optional
+        Seuil de saturation (unités de l'image) : attache unilatérale.
     callback : callable, optional
         ``callback(k, z)`` après chaque débruitage.
     """
     return _pnp(image, psf, sigma, admm=False, denoiser=denoiser, denoiser_kwargs=denoiser_kwargs,
                 lam=lam, n_iter=n_iter, sigma_start=sigma_start, sigma_min=sigma_min,
                 data_range=data_range, boundary=boundary, callback=callback,
-                fill_boundary=fill_boundary)
+                fill_boundary=fill_boundary, mask=mask, saturation=saturation)
 
 
 def pnp_admm_deconvolve(
@@ -195,21 +208,23 @@ def pnp_admm_deconvolve(
     denoiser_kwargs: dict | None = None,
     lam: float = 0.5,
     n_iter: int = 12,
-    sigma_start: float = 0.2,
+    sigma_start: float = 0.1,
     sigma_min: float = 0.002,
     data_range: tuple[float, float] | None = None,
     fill_boundary: bool = True,
     boundary: str = "reflect",
+    mask: np.ndarray | None = None,
+    saturation: float | None = None,
     callback: Callback = None,
 ) -> np.ndarray:
     """
     Plug-and-Play ADMM, avec continuation du niveau du débruiteur
-    (mêmes paramètres que :func:`pnp_hqs_deconvolve`, mais ``lam`` = 0.5
-    par défaut, meilleur compromis mesuré sur les quatre flous du
-    benchmark). La variable duale réduite ``u`` corrige l'écart entre
+    (mêmes paramètres que :func:`pnp_hqs_deconvolve`, mais ``lam`` = 0.5 et
+    ``sigma_start`` = 0.1 par défaut, meilleur compromis mesuré sur quatre
+    flous et trois niveaux de bruit). La variable duale réduite ``u`` corrige l'écart entre
     ``x`` et ``z`` ; elle est remise à l'échelle quand le pas change.
     """
     return _pnp(image, psf, sigma, admm=True, denoiser=denoiser, denoiser_kwargs=denoiser_kwargs,
                 lam=lam, n_iter=n_iter, sigma_start=sigma_start, sigma_min=sigma_min,
                 data_range=data_range, boundary=boundary, callback=callback,
-                fill_boundary=fill_boundary)
+                fill_boundary=fill_boundary, mask=mask, saturation=saturation)

@@ -6,6 +6,35 @@ dans `REFERENCE_TECHNIQUE.md`, annexe A.
 
 ## Version History
 
+0.3.0 (2026-11-02)
+
+:   Version intermédiaire 0.2.0 non publiée : son contenu est intégré ici.
+
+    -   **Réglages par défaut optimisés** (PSNR moyen sur quatre flous ×
+        trois niveaux de bruit, vérifié sur une image distincte) :
+        `inverse` seuil 0.15 (+4.6 dB), `richardson_lucy` 50 itérations
+        avec `tv_weight=0.005` (+1.4 dB), `fista_wavelet` λ 0.15 et
+        5 niveaux (+0.2 dB), `pnp_hqs` `sigma_start=0.05` (+1.2 dB),
+        `pnp_admm` `sigma_start=0.1` (+0.4 dB) ; REFERENCE_TECHNIQUE.md §9.1.
+    -   **Données incomplètes** pour toutes les méthodes sauf
+        `wiener_unsupervised` et `blind_l0` : `mask=` (pixels masqués,
+        NaN), `saturation=` (attache unilatérale), et
+        `boundary="unknown"` (marge inconnue, Almeida & Figueiredo 2013),
+        par un même remplissage des données (EM pour les méthodes
+        linéaires et Richardson-Lucy, gradient exact pour les autres).
+    -   `boundary="unknown"` par défaut pour `wiener`, `tikhonov`,
+        `fista_wavelet` et `tv_primal_dual` (+0.8 à +2.2 dB sur flou de
+        bougé).
+    -   `landweber(acceleration=True)` : pas de Barzilai-Borwein.
+    -   `psf.system_psf` (diffraction d'une pupille annulaire,
+        défocalisation, filé, jitter, intégration sur le pixel),
+        `psf.annular_airy`, `psf.combine_psfs`.
+    -   `TUTORIEL.md` et `examples/tutorial.py` ; bibliographie enrichie
+        (« Pour aller plus loin ») ; `BENCHMARK.md` §4 (données
+        incomplètes).
+    -   Test de référence par CVXPY (dépendance de développement).
+    -   Dépend d'eoqual-core 0.3.0 (`psf.airy_radius_px`).
+
 0.1.0 (2026-10-29)
 
 :   -   **11 méthodes de déconvolution**, appel unifié

@@ -2,7 +2,7 @@
 
 [tool.poetry]
 name = "eoqual-deconvolution"
-version = "0.1.0"
+version = "0.3.0"
 description = "Image deconvolution methods for Earth observation"
 authors = ["Olivier Amram <olivier.amram@free.fr>"]
 maintainers = [
@@ -23,7 +23,7 @@ exclude = [
 python = ">=3.10,<4.0"
 # Briques communes (kernel, noise, psf, fourier), épinglées sur une
 # version : voir les règles de stabilité d'eoqual-core.
-eoqual-core = {git = "https://github.com/EOQual/eoqual-core.git", tag = "v0.2.0"}
+eoqual-core = {git = "https://github.com/EOQual/eoqual-core.git", tag = "v0.3.0"}
 # Métriques (PSNR, SSIM, indice de netteté SI) : réglage et benchmark.
 eoqual-metrics = {git = "https://github.com/EOQual/eoqual-metrics.git", tag = "v1.2.1"}
 # Figures Plotly génériques (galerie, courbes).
@@ -65,6 +65,8 @@ black = "^23.3.0"
 coverage = "^6.5.0"
 pylint = "*"
 pytest = "<9"
+# cvxpy : solution de référence de tests/test_reference_cvxpy.py (sauté sans).
+cvxpy = "*"
 
 [build-system]
 requires = ["poetry-core"]
