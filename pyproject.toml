@@ -2,7 +2,7 @@
 
 [tool.poetry]
 name = "eoqual-deconvolution"
-version = "0.3.0"
+version = "0.3.1"
 description = "Image deconvolution methods for Earth observation"
 authors = ["Olivier Amram <olivier.amram@free.fr>"]
 maintainers = [

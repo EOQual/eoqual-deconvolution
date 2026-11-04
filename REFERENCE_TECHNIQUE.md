@@ -98,18 +98,9 @@ largeur de la PSF autour de l'image.
 l'image plus une marge — et on n'impose l'accord avec les données que là
 où il y a des données (Almeida & Figueiredo 2013) :
 
-```
-            domaine de travail (périodique pour la FFT)
-  ┌──────────────────────────────┬──────────┐
-  │                              │          │
-  │      image observée y        │  marge   │   x est inconnue partout ;
-  │   H × W pixels : CONNUS      │ INCONNUE │   h ∗ x doit égaler y
-  │  (attache ‖h ∗ x − y‖²)      │ (aucune  │   seulement sur l'image.
-  │                              │ attache) │
-  ├──────────────────────────────┘          │
-  │              marge INCONNUE             │
-  └─────────────────────────────────────────┘
-```
+![Modes de bords « reflect » et « unknown »](resources/boundary_modes.png)
+
+*Schéma régénérable par `python examples/figures.py`.*
 
 ``min_x ‖C(h ∗ x) − y‖² + R(x)``, où ``C`` ne garde que les pixels de
 l'image. La marge de ``x`` n'est contrainte que par la régularisation

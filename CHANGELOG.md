@@ -6,6 +6,24 @@ dans `REFERENCE_TECHNIQUE.md`, annexe A.
 
 ## Version History
 
+0.3.1 (2026-11-04)
+
+:   -   `REFERENCE_TECHNIQUE.md` §2.1 : le schéma des modes de bords
+        (`reflect`, `unknown`) devient une figure PNG
+        (`resources/boundary_modes.png`), régénérable par
+        `examples/figures.py`, au lieu d'un dessin en caractères.
+    -   Dépend d'eoqual-core 0.4.0 (`psf.airy_radius_px`,
+        `psf.supersampled_coverage`). `psf._supersampled` (interne,
+        `disk_psf`/`motion_psf`) délègue maintenant à
+        `eoqual.core.psf.supersampled_coverage` plutôt que de dupliquer
+        le même calcul — refactor pur, comportement et sortie numérique
+        inchangés (111 tests, aucune régression).
+    -   **Correctif CI** : `eoqual-metrics` relevé à 1.2.2 — l'ancien
+        pin (1.2.1) épinglait lui-même `eoqual-core` à 0.1.0, en
+        conflit avec le pin direct 0.4.0 (`SolverProblemError` de
+        poetry : deux tags d'un même paquet git ne peuvent pas
+        coexister). eoqual-metrics 1.2.2 relève ce même pin à 0.4.0.
+
 0.3.0 (2026-11-02)
 
 :   Version intermédiaire 0.2.0 non publiée : son contenu est intégré ici.
@@ -33,19 +51,8 @@ dans `REFERENCE_TECHNIQUE.md`, annexe A.
         (« Pour aller plus loin ») ; `BENCHMARK.md` §4 (données
         incomplètes).
     -   Test de référence par CVXPY (dépendance de développement).
-    -   Dépend d'eoqual-core 0.4.0 (`psf.airy_radius_px`,
-        `psf.supersampled_coverage`). `psf._supersampled` (interne,
-        `disk_psf`/`motion_psf`) délègue maintenant à
-        `eoqual.core.psf.supersampled_coverage` plutôt que de dupliquer
-        le même calcul — refactor pur, comportement et sortie numérique
-        inchangés (suite de tests complète revérifiée : 111 tests,
-        aucune régression).
-    -   **Correctif CI** : `eoqual-metrics` relevé à 1.2.2 — l'ancien
-        pin (1.2.1) épinglait lui-même `eoqual-core` à 0.1.0, en
-        conflit avec le pin direct 0.4.0 ci-dessus (`SolverProblemError`
-        de poetry, les deux ne pouvant pas coexister pour un même paquet
-        git épinglé par tag). 1.2.2 d'eoqual-metrics relève ce même pin
-        à 0.4.0, purement additif de son côté aussi.
+    -   Dépend d'eoqual-core 0.3.0 (`psf.airy_radius_px`) et
+        d'eoqual-metrics 1.2.1.
 
 0.1.0 (2026-10-29)
 
