@@ -87,3 +87,11 @@ ici sous MIT.
 
 Les tests, exemples et benchmarks utilisent l'image « astronaut »
 fournie par scikit-image (NASA, domaine public).
+
+Les bancs d'essai `examples/wiener_hunt_benchmark.py` et
+`examples/blind_optics_benchmark.py` (BENCHMARK.md §6-7) utilisent en
+outre, si on la leur fournit, un extrait de l'**Orthophotoplan 2024** de
+Toulouse Métropole, © Toulouse Métropole, **Licence Ouverte 2.0**
+(Etalab) —
+<https://data.toulouse-metropole.fr/explore/dataset/orthophotoplan-2024/>.
+L'image n'est pas versionnée dans ce dépôt.

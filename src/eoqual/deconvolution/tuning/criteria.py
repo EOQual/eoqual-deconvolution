@@ -15,6 +15,14 @@ Fourier ``S_λ(ω) = |H|² / (|H|² + λ|L|²)``, résidu
 - **discrépance** (Morozov 1966) : ``λ`` tel que le résidu égale
   l'énergie attendue du bruit, ``N σ²``. Nécessite σ ; tend à
   sur-régulariser légèrement ;
+- **vraisemblance marginale** (« evidence », Wiener–Hunt bayésien) :
+  avec un a priori gaussien ``x ~ N(0, (γ_x LᵀL)⁻¹)`` et un bruit blanc
+  ``N(0, γ_b⁻¹)``, l'image observée est gaussienne, diagonale en
+  Fourier : ``E|Y(ω)|²/N = v(ω) = σ² (1 + |H|²/(λ |L|²))`` avec
+  ``σ² = 1/γ_b`` et ``λ = γ_x/γ_b``. Maximiser ``p(y | λ, σ²)`` (la scène
+  intégrée) choisit λ **et** σ sans référence (MacKay 1992 ; Molina 1994 ;
+  Orieux et al. 2010 pour l'échantillonnage) — voir
+  :func:`wiener_hunt_evidence` ;
 - **L-curve** (Hansen 1992) : coin de courbure maximale de
   ``(log ‖résidu‖, log ‖L x_λ‖)``. Moins stable que les deux autres sur
   image : fourni pour diagnostic (:func:`l_curve`).
@@ -25,7 +33,10 @@ import numpy as np
 from scipy import fft as spfft
 from scipy.optimize import minimize_scalar
 
-__all__ = ["gcv_curve", "discrepancy_curve", "l_curve", "select_lambda", "residual_energy", "DEFAULT_LAMBDAS"]
+__all__ = [
+    "gcv_curve", "discrepancy_curve", "l_curve", "select_lambda", "residual_energy", "DEFAULT_LAMBDAS",
+    "wiener_hunt_evidence", "wiener_hunt_estimate", "evidence_curve",
+]
 
 #: Grille de recherche par défaut de λ (balayage logarithmique).
 DEFAULT_LAMBDAS = np.logspace(-10, 3, 66)
@@ -48,6 +59,81 @@ def gcv_values(Y: np.ndarray, abs2: np.ndarray, L2: np.ndarray, lams: np.ndarray
     return np.array([_gcv(lam, Y, abs2, L2) for lam in lams])
 
 
+def _evidence_terms(Y, abs2, L2):
+    keep = L2 > 0
+    keep[0, 0] = False                                   # moyenne : a priori impropre
+    return np.abs(Y[keep]) ** 2 / Y.size, abs2[keep], L2[keep]
+
+
+def wiener_hunt_evidence(
+    Y: np.ndarray, abs2: np.ndarray, L2: np.ndarray, lam: float, sigma: float | None = None
+) -> tuple[float, float]:
+    """
+    Opposé du logarithme de la vraisemblance marginale ``p(y | λ, σ²)`` du
+    modèle de Wiener–Hunt (constantes omises) et σ² correspondant.
+
+    Modèle : ``Y(ω)`` gaussien complexe centré de variance ``N v(ω)``,
+    ``v = σ² s``, ``s(ω) = 1 + |H(ω)|² / (λ |L(ω)|²)``, fréquences où
+    ``|L| > 0`` hors fréquence nulle. ``−log p = Σ [log v + P/v]`` avec
+    ``P = |Y|²/N``. Si ``sigma`` est ``None``, σ² est profilé
+    analytiquement (``σ̂² = moyenne(P/s)``) et le critère devient
+    ``Σ log s + M log σ̂²`` (``M`` fréquences).
+
+    Returns
+    -------
+    (critère, σ²)
+    """
+    P, a2, l2 = _evidence_terms(Y, abs2, L2)
+    s = 1.0 + a2 / (max(lam, 1e-300) * l2)
+    if sigma is None:
+        s2 = float(np.mean(P / s))
+        return float(np.sum(np.log(s)) + P.size * np.log(max(s2, 1e-300))), s2
+    s2 = float(sigma) ** 2
+    v = s2 * s
+    return float(np.sum(np.log(v) + P / v)), s2
+
+
+def wiener_hunt_estimate(
+    Y: np.ndarray,
+    abs2: np.ndarray,
+    L2: np.ndarray,
+    sigma: float | None = None,
+    lams: np.ndarray = DEFAULT_LAMBDAS,
+) -> tuple[float, float, float]:
+    """
+    ``λ`` (et σ si ``sigma=None``) maximisant la vraisemblance marginale de
+    Wiener–Hunt : balayage de ``lams`` puis recherche bornée autour du
+    minimum.
+
+    Returns
+    -------
+    (λ, σ, critère)
+    """
+    lams = np.asarray(lams, dtype=np.float64)
+    terms = _evidence_terms(Y, abs2, L2)
+
+    def crit(t):
+        P, a2, l2 = terms
+        s = 1.0 + a2 / (10.0**t * l2)
+        if sigma is None:
+            return float(np.sum(np.log(s)) + P.size * np.log(max(np.mean(P / s), 1e-300)))
+        v = sigma**2 * s
+        return float(np.sum(np.log(v) + P / v))
+
+    loglams = np.log10(lams)
+    vals = np.array([crit(t) for t in loglams])
+    i = int(np.argmin(vals))
+    lo, hi = loglams[max(i - 1, 0)], loglams[min(i + 1, len(lams) - 1)]
+    t = loglams[i]
+    if hi > lo:
+        res = minimize_scalar(crit, bounds=(lo, hi), method="bounded", options={"xatol": 1e-3})
+        if res.fun <= vals[i]:
+            t = float(res.x)
+    lam = float(10.0**t)
+    j, s2 = wiener_hunt_evidence(Y, abs2, L2, lam, sigma)
+    return lam, float(np.sqrt(s2)), j
+
+
 def select_lambda(
     Y: np.ndarray,
     abs2: np.ndarray,
@@ -58,8 +144,9 @@ def select_lambda(
     lams: np.ndarray = DEFAULT_LAMBDAS,
 ) -> float:
     """
-    ``λ`` choisi par ``rule`` (``"gcv"`` ou ``"discrepancy"``) à partir des
-    spectres ``Y = FFT(y)``, ``|H|²`` et ``|L|²``.
+    ``λ`` choisi par ``rule`` (``"gcv"``, ``"discrepancy"`` ou
+    ``"evidence"``) à partir des spectres ``Y = FFT(y)``, ``|H|²`` et
+    ``|L|²``.
 
     GCV : balayage de ``lams`` puis affinage par recherche bornée autour
     du minimum. Discrépance : bisection en ``log λ`` (le résidu croît
@@ -68,6 +155,8 @@ def select_lambda(
     """
     lams = np.asarray(lams, dtype=np.float64)
     loglams = np.log10(lams)
+    if rule == "evidence":
+        return wiener_hunt_estimate(Y, abs2, L2, sigma, lams)[0]
     if rule == "gcv":
         vals = gcv_values(Y, abs2, L2, lams)
         i = int(np.argmin(vals))
@@ -98,7 +187,7 @@ def select_lambda(
             else:
                 hi = mid
         return float(10.0 ** (0.5 * (lo + hi)))
-    raise ValueError(f"rule doit valoir 'gcv' ou 'discrepancy', reçu {rule!r}.")
+    raise ValueError(f"rule doit valoir 'gcv', 'discrepancy' ou 'evidence', reçu {rule!r}.")
 
 
 def _spectra(image, psf, regularizer, boundary):
@@ -148,6 +237,28 @@ def discrepancy_curve(
     res = np.array([residual_energy(Y, abs2 / np.maximum(abs2 + lam * L2, 1e-300)) for lam in lams]) / Y.size
     lam = select_lambda(Y, abs2, L2, rule="discrepancy", sigma=sigma, lams=lams)
     return lams, res, sigma**2, lam
+
+
+def evidence_curve(
+    image: np.ndarray,
+    psf: np.ndarray,
+    sigma: float | None = None,
+    *,
+    regularizer: str = "laplacian",
+    lams: np.ndarray = DEFAULT_LAMBDAS,
+    boundary: str = "reflect",
+) -> tuple[np.ndarray, np.ndarray, float, float]:
+    """
+    Critère de vraisemblance marginale de Wiener–Hunt en fonction de ``λ``.
+
+    Returns
+    -------
+    (lams, critère, lam_best, sigma_best)
+    """
+    Y, abs2, L2 = _spectra(image, psf, regularizer, boundary)
+    vals = np.array([wiener_hunt_evidence(Y, abs2, L2, lam, sigma)[0] for lam in lams])
+    lam, s, _ = wiener_hunt_estimate(Y, abs2, L2, sigma, lams)
+    return lams, vals, lam, s
 
 
 def l_curve(

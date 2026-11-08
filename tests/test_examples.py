@@ -10,7 +10,7 @@ EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("name", ["quickstart", "tuning", "blind", "tutorial"])
+@pytest.mark.parametrize("name", ["quickstart", "tuning", "blind", "blind_optics", "tutorial"])
 def test_example_runs(name, tmp_path):
     env = dict(os.environ, EOQUAL_EXAMPLES_OUT=str(tmp_path), EOQUAL_EXAMPLES_SIZE="128",
                EOQUAL_EXAMPLES_N_CALLS="4")
@@ -22,5 +22,6 @@ def test_example_runs(name, tmp_path):
     assert any(tmp_path.glob("*.html"))
 
 
-def test_benchmark_compiles():
-    compile((EXAMPLES / "benchmark.py").read_text(encoding="utf-8"), "benchmark.py", "exec")
+@pytest.mark.parametrize("name", ["benchmark", "blind_optics_benchmark", "wiener_hunt_benchmark", "figures"])
+def test_benchmark_compiles(name):
+    compile((EXAMPLES / f"{name}.py").read_text(encoding="utf-8"), f"{name}.py", "exec")

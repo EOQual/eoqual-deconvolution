@@ -24,6 +24,7 @@ _DISPATCH = {
     "inverse": "eoqual.deconvolution.backends.linear:inverse_deconvolve",
     "wiener": "eoqual.deconvolution.backends.linear:wiener_deconvolve",
     "wiener_unsupervised": "eoqual.deconvolution.backends.linear:wiener_unsupervised_deconvolve",
+    "wiener_hunt": "eoqual.deconvolution.backends.linear:wiener_hunt_deconvolve",
     "tikhonov": "eoqual.deconvolution.backends.linear:tikhonov_deconvolve",
     "richardson_lucy": "eoqual.deconvolution.backends.iterative:richardson_lucy_deconvolve",
     "landweber": "eoqual.deconvolution.backends.iterative:landweber_deconvolve",
@@ -32,6 +33,7 @@ _DISPATCH = {
     "pnp_hqs": "eoqual.deconvolution.backends.pnp:pnp_hqs_deconvolve",
     "pnp_admm": "eoqual.deconvolution.backends.pnp:pnp_admm_deconvolve",
     "blind_l0": "eoqual.deconvolution.backends.blind:blind_l0_deconvolve",
+    "blind_optics": "eoqual.deconvolution.backends.optics_blind:blind_optics_deconvolve",
 }
 
 

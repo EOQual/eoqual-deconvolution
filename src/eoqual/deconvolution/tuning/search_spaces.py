@@ -38,6 +38,7 @@ __all__ = ["SEARCH_SPACES", "SPACES_DIR", "get_search_space", "load_search_space
 SPACES_DIR = Path(__file__).with_name("spaces")
 SEARCH_SPACES: dict[str, dict] = {p.stem: load_jsonc(p) for p in sorted(SPACES_DIR.glob("*.jsonc"))}
 # wiener_unsupervised : aucun paramètre réglable (niveaux estimés) → pas de fichier.
+# blind_optics : paramètres physiques estimés, modèle optique donné par l'utilisateur → pas de fichier.
 
 _TYPES = ("int", "float", "categorical")
 _PRIORS = ("uniform", "log-uniform")

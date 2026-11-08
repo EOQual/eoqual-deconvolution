@@ -6,6 +6,50 @@ dans `REFERENCE_TECHNIQUE.md`, annexe A.
 
 ## Version History
 
+0.4.0 (2026-11-08)
+
+:   -   `wiener_hunt` (nouvelle méthode linéaire) : déconvolution de
+        Wiener–Hunt (Hunt 1973), filtre `H*Y/(|H|² + λ|D|²)`, λ et σ
+        estimés par **vraisemblance marginale** (la scène intégrée
+        analytiquement en Fourier), sans réglage ni connaissance du
+        bruit ; version déterministe du Wiener–Hunt non supervisé
+        d'Orieux et al. (2010). Marge inconnue, pixels masqués et saturés
+        gérés. 24 cas : au niveau de `tikhonov` (GCV, +0.02 dB en
+        moyenne), +1.15 dB sur `wiener_unsupervised` (jusqu'à +8.8 dB),
+        σ à 3 % près (REFERENCE_TECHNIQUE.md §3.5, BENCHMARK.md §6).
+        `wiener_hunt_parameters` renvoie λ, σ et le critère.
+    -   `tikhonov(rule="evidence")` et `tuning.criteria` :
+        `wiener_hunt_evidence`, `wiener_hunt_estimate`, `evidence_curve`.
+    -   `blind_optics` (nouvelle méthode aveugle) et
+        `backends.optics_blind` : **déconvolution aveugle contrainte par
+        l'optique** — la PSF est celle d'un modèle physique de
+        l'instrument (`OpticalModel` : échantillonnage Q, obturation,
+        paramètres connus fixés, défocalisation / aberrations de
+        Zernike / jitter estimés dans des bornes plausibles), estimée par
+        vraisemblance marginale (`estimator="evidence"`, a priori de
+        scène en |ω|^-3) ou par les contours (`estimator="l0"`) ;
+        variation dans le champ par tuiles avec modèle de champ
+        (constant, plan, quadratique) et recollement de Hann. 30 cas :
+        1.2 dB sous la vraie PSF en moyenne, contre 3.1 dB pour
+        `blind_l0` (REFERENCE_TECHNIQUE.md §8.2, BENCHMARK.md §7) ; limites
+        d'identifiabilité documentées (signe, aberrations impaires, flou
+        isotrope doux, anisotropie de la scène).
+    -   `psf.optical_psf` : PSF de diffraction d'une pupille annulaire
+        aberrée (Zernike de Noll, ondes RMS), jitter, intégration sur le
+        pixel, bande spectrale ; identique à l'Airy analytique à 0.4 %
+        près ; FTM toujours sous la diffraction. `psf.defocus_to_zernike`.
+    -   Base de Zernike et PSF de phase prises dans eoqual-core 0.5.0
+        (`eoqual.core.pupil`, déplacées depuis eoqual-phaseretrieval).
+    -   Exemples `blind_optics.py`, `blind_optics_benchmark.py`,
+        `wiener_hunt_benchmark.py` ; figure `resources/optical_psfs.png`
+        (`examples/figures.py`) ; tutoriel §3 et §7.
+    -   `REFERENCE_TECHNIQUE.md` §10.1 : jitter et filé, deux mouvements
+        différents (FTM gaussienne contre sinus cardinal directionnel,
+        équivalence aux basses fréquences σ = L/√12, cas du push-broom
+        et du TDI).
+    -   Dépendances : eoqual-core `v0.5.0`, eoqual-metrics `v1.2.3` (même
+        core, pour que poetry résolve).
+
 0.3.1 (2026-11-04)
 
 :   -   `REFERENCE_TECHNIQUE.md` §2.1 : le schéma des modes de bords

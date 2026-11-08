@@ -41,6 +41,13 @@ METHODS_CONFIGS: OrderedDict = OrderedDict(
             "restriction": None,
             "reference": "Orieux, Giovannelli & Rodet (2010), JOSA A 27(7)",
         },
+        "wiener_hunt": {
+            "family": "linéaire",
+            "extra": None,
+            "license": _OWN,
+            "restriction": None,
+            "reference": "Hunt (1973), IEEE Trans. Computers C-22(9) ; évidence : MacKay (1992), Molina (1994)",
+        },
         "tikhonov": {
             "family": "linéaire",
             "extra": None,
@@ -96,6 +103,13 @@ METHODS_CONFIGS: OrderedDict = OrderedDict(
             "license": _OWN,
             "restriction": "expérimentale : vérifier la PSF estimée (blind_deconvolve)",
             "reference": "Xu, Zheng & Jia (2013) CVPR ; Pan et al. (2014) CVPR",
+        },
+        "blind_optics": {
+            "family": "aveugle",
+            "extra": None,
+            "license": _OWN,
+            "restriction": "PSF paramétrique : modèle optique de l'instrument requis (optics_blind_deconvolve)",
+            "reference": "Orieux, Giovannelli & Rodet (2010) JOSA A ; Blanco & Mugnier (2011) ; Noll (1976)",
         },
     }
 )

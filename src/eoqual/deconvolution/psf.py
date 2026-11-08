@@ -16,6 +16,10 @@ PSF mesurée.
 - :func:`system_psf` : PSF d'un instrument à partir de ses paramètres
   physiques (diffraction d'une pupille annulaire, défocalisation, filé,
   jitter, intégration sur le pixel) ;
+- :func:`optical_psf` : diffraction d'une pupille annulaire **aberrée**
+  (front d'onde en polynômes de Zernike), jitter, intégration sur le
+  pixel — le modèle paramétrique de la déconvolution aveugle contrainte
+  par l'optique (``blind_optics``) ;
 - :func:`combine_psfs` : convolution de plusieurs PSF (chaîne
   d'acquisition).
 
@@ -34,7 +38,7 @@ from eoqual.core.psf import airy_radius_px, integrated_profile, supersampled_cov
 
 __all__ = [
     "gaussian_psf", "airy_psf", "moffat_psf", "disk_psf", "motion_psf", "center_psf",
-    "system_psf", "combine_psfs", "annular_airy",
+    "system_psf", "combine_psfs", "annular_airy", "optical_psf", "defocus_to_zernike", "ZERNIKE_NAMES",
 ]
 
 
@@ -333,4 +337,175 @@ def system_psf(
         fine = convolve_circular(fine, k)
     fine = np.clip(fine, 0, None)
     det = fine.reshape(n, oversample, n, oversample).sum(axis=(1, 3))
+    return det / det.sum()
+
+
+# ---------------------------------------------------------------------------
+# PSF de diffraction avec aberrations (front d'onde en polynômes de Zernike)
+# ---------------------------------------------------------------------------
+
+#: Noms usuels des premiers modes de Zernike (indices de Noll).
+ZERNIKE_NAMES = {
+    4: "defocus", 5: "astig_45", 6: "astig_0", 7: "coma_y", 8: "coma_x",
+    9: "trefoil_y", 10: "trefoil_x", 11: "spherical",
+}
+
+
+def defocus_to_zernike(delta_z: float, f_number: float, wavelength: float) -> float:
+    """
+    Coefficient de Zernike ``a₄`` [ondes RMS] d'un déplacement du plan
+    focal ``delta_z`` (même unité que ``wavelength``) pour une ouverture
+    ``N = f/D`` : écart de front d'onde ``W₂₀ = Δz / (8 N²)`` (crête à
+    bord de pupille), ``a₄ = W₂₀ / (2√3 λ)``.
+    """
+    return float(delta_z) / (8.0 * f_number**2) / (2.0 * np.sqrt(3.0) * wavelength)
+
+
+def _zernike_array(zernike) -> np.ndarray:
+    """Coefficients ``{j: a_j}`` ou séquence (``j = 1, 2, …``) → tableau indexé ``j − 1``."""
+    if zernike is None:
+        return np.zeros(0)
+    if isinstance(zernike, dict):
+        if not zernike:
+            return np.zeros(0)
+        inv = {v: k for k, v in ZERNIKE_NAMES.items()}
+        items = {(inv[k] if isinstance(k, str) else int(k)): float(v) for k, v in zernike.items()}
+        if min(items) < 1:
+            raise ValueError("Les indices de Noll commencent à 1.")
+        out = np.zeros(max(items))
+        for j, v in items.items():
+            out[j - 1] = v
+        return out
+    return np.asarray(zernike, dtype=np.float64).ravel()
+
+
+_PUPIL_CACHE: dict = {}
+
+
+def _pupil_and_basis(n_fft: int, diameter: float, obscuration: float, nterms: int):
+    """Pupille annulaire anti-crénelée et base de Zernike sur une grille FFT ``n_fft`` (mise en cache)."""
+    from eoqual.core.pupil import zernike_basis
+
+    key = (n_fft, round(diameter, 9), round(obscuration, 9), nterms)
+    if key not in _PUPIL_CACHE:
+        radius = diameter / 2.0
+        c = n_fft // 2
+
+        def inside(y, x):
+            r = np.hypot(y, x) / radius
+            return (r <= 1.0) & (r >= obscuration)
+
+        mask = supersampled_coverage(inside, (n_fft, n_fft), (c, c), 4)
+        yy, xx = np.indices((n_fft, n_fft)) - c
+        rho, theta = np.hypot(yy, xx) / radius, np.arctan2(yy, xx)
+        basis = zernike_basis(nterms, rho=rho, theta=theta) if nterms else np.zeros((0, n_fft, n_fft))
+        if len(_PUPIL_CACHE) > 16:
+            _PUPIL_CACHE.clear()
+        _PUPIL_CACHE[key] = (mask, basis)
+    return _PUPIL_CACHE[key]
+
+
+def optical_psf(
+    sampling,
+    *,
+    zernike=None,
+    obscuration: float = 0.0,
+    jitter_sigma: float = 0.0,
+    weights=None,
+    size: int | None = None,
+    oversample: int = 5,
+    pupil_samples: int | None = None,
+) -> np.ndarray:
+    """
+    PSF de diffraction d'une pupille annulaire **aberrée**, intégrée sur le
+    pixel du détecteur, somme 1, support impair.
+
+    Modèle de Fraunhofer : ``h = |TF(P · exp(2iπ W))|² ⊛ jitter ⊛ pixel``,
+    avec ``W = Σ_j a_j Z_j`` le front d'onde [ondes] développé sur les
+    polynômes de Zernike (Noll, RMS 1, :mod:`eoqual.core.pupil`). Contrairement
+    à :func:`system_psf` (Airy analytique, défocalisation géométrique),
+    la défocalisation et les aberrations sont ici traitées en optique
+    ondulatoire, valable aussi pour les faibles défauts (< 1 onde) qui
+    sont le cas courant d'un instrument réglé.
+
+    **Borne physique.** Pour une pupille donnée, la FTM d'un système aberré
+    n'excède jamais la FTM de diffraction (inégalité de Schwarz sur
+    l'autocorrélation de la pupille) : toute PSF produite ici respecte
+    ``|H| ≤ FTM_diffraction × sinc`` par construction.
+
+    Parameters
+    ----------
+    sampling : float or sequence of float
+        Facteur d'échantillonnage ``Q = λ f / (D p)`` (2 : Nyquist ;
+        < 2 : sous-échantillonné, cas courant en télédétection, Q ≈ 1).
+        Une séquence modélise une bande spectrale (une valeur par longueur
+        d'onde, ``Q ∝ λ``), pondérée par ``weights``.
+    zernike : dict or sequence, optional
+        Coefficients du front d'onde en **ondes RMS** à la première
+        longueur d'onde de ``sampling`` : ``{4: 0.1, "astig_0": 0.05}``
+        (indices de Noll ou noms de :data:`ZERNIKE_NAMES`), ou séquence
+        ``a_1, a_2, …``. À une autre longueur d'onde, la phase est
+        multipliée par ``λ₁/λ = Q₁/Q``.
+    obscuration : float, default 0
+        Obturation centrale (rapport des diamètres).
+    jitter_sigma : float, default 0
+        Écart-type du jitter gaussien [pixels].
+    weights : sequence of float, optional
+        Poids spectraux (énergie reçue) associés à ``sampling``.
+    size : int, optional
+        Côté du support (impair) ; défaut : six anneaux noirs plus
+        ``3·jitter_sigma``, au moins 9.
+    oversample : int, default 5
+        Sur-échantillonnage (impair) de la grille focale avant intégration
+        sur le pixel.
+    pupil_samples : int, optional
+        Nombre d'échantillons sur le diamètre de la pupille ; défaut :
+        au moins 48 et assez pour que la période de la PSF calculée par
+        FFT couvre deux fois le support.
+
+    Examples
+    --------
+    Instrument à Q = 1, obturation 0.3, défocalisation de 0.1 onde RMS :
+
+    >>> h = optical_psf(1.0, zernike={4: 0.1}, obscuration=0.3)
+    """
+    qs = np.atleast_1d(np.asarray(sampling, dtype=np.float64))
+    if np.any(qs <= 0):
+        raise ValueError("sampling (λf/(Dp)) doit être strictement positif.")
+    w = np.ones(qs.size) if weights is None else np.asarray(weights, dtype=np.float64)
+    if w.shape != qs.shape or np.any(w < 0) or w.sum() <= 0:
+        raise ValueError("weights doit avoir la taille de sampling, positif, de somme non nulle.")
+    if oversample < 1 or oversample % 2 == 0:
+        raise ValueError("oversample doit être un entier impair ≥ 1.")
+    if jitter_sigma < 0:
+        raise ValueError("jitter_sigma doit être positif ou nul.")
+    if not 0.0 <= obscuration < 1.0:
+        raise ValueError("obscuration doit être dans [0, 1[.")
+    coeffs = _zernike_array(zernike)
+    if size is None:
+        size = max(9, 2 * np.ceil(6 * 0.61 * qs.max() + 3 * jitter_sigma) + 1)
+    n = _odd(size)
+    fine_n = n * oversample
+    out = np.zeros((fine_n, fine_n))
+    for q, wk in zip(qs, w):
+        if wk == 0:
+            continue
+        dp = pupil_samples or max(48, int(np.ceil(2 * n / q)))
+        n_fft = int(np.ceil(oversample * q * dp))
+        n_fft = max(n_fft + (n_fft % 2), fine_n + 1)
+        diameter = n_fft / (oversample * q)           # un pixel focal fin = p / oversample
+        mask, basis = _pupil_and_basis(n_fft, diameter, obscuration, coeffs.size)
+        phase = (2 * np.pi * qs[0] / q) * np.tensordot(coeffs, basis, axes=(0, 0)) if coeffs.size else 0.0
+        field = np.fft.fft2(np.fft.ifftshift(mask * np.exp(1j * phase)))
+        psf = np.abs(field) ** 2
+        if jitter_sigma > 0:
+            f2 = np.fft.fftfreq(n_fft)[:, None] ** 2 + np.fft.fftfreq(n_fft)[None, :] ** 2
+            s = jitter_sigma * oversample
+            psf = np.fft.ifft2(np.fft.fft2(psf) * np.exp(-2 * np.pi**2 * s**2 * f2)).real
+        psf = np.fft.fftshift(psf)
+        c = n_fft // 2
+        crop = psf[c - fine_n // 2 : c + fine_n // 2 + 1, c - fine_n // 2 : c + fine_n // 2 + 1]
+        out += wk * crop / psf.sum()
+    out = np.clip(out, 0, None)
+    det = out.reshape(n, oversample, n, oversample).sum(axis=(1, 3))
     return det / det.sum()

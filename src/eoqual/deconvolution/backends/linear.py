@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 Méthodes linéaires en une passe, résolues dans le domaine de Fourier :
-filtre inverse tronqué, Wiener, Wiener non supervisé (scikit-image),
-Tikhonov.
+filtre inverse tronqué, Wiener, Wiener–Hunt (paramètres par
+vraisemblance marginale), Wiener non supervisé (scikit-image), Tikhonov.
 
 Notations (FFT non normalisée, ``N`` pixels) : ``Y = H·X + B``, avec
 ``E|B(ω)|² = N σ²``.
@@ -20,6 +20,8 @@ __all__ = [
     "inverse_deconvolve",
     "wiener_deconvolve",
     "wiener_unsupervised_deconvolve",
+    "wiener_hunt_deconvolve",
+    "wiener_hunt_parameters",
     "tikhonov_deconvolve",
     "fit_power_law_signal",
 ]
@@ -233,6 +235,97 @@ def wiener_unsupervised_deconvolve(
     return pb.domain.restore(np.asarray(est, dtype=np.float64))
 
 
+def wiener_hunt_parameters(
+    image: np.ndarray,
+    psf: np.ndarray,
+    sigma: float | None = None,
+    *,
+    prior: str = "laplacian",
+    boundary: str = "unknown",
+    mask: np.ndarray | None = None,
+    saturation: float | None = None,
+) -> dict:
+    """
+    Paramètres de Wiener–Hunt estimés par maximum de vraisemblance
+    marginale (:func:`eoqual.deconvolution.tuning.criteria.wiener_hunt_estimate`).
+
+    Returns
+    -------
+    dict
+        ``lam`` (= γ_x/γ_b), ``sigma`` (écart-type du bruit, estimé si
+        ``sigma=None``, sinon recopié), ``criterion`` (−log vraisemblance
+        marginale, constantes omises).
+    """
+    from ..tuning.criteria import wiener_hunt_estimate
+
+    pb = setup(image, psf, boundary, mask=mask, saturation=saturation)
+    L2 = regularizer_power(prior, pb.y.shape)
+    lam, s, crit = wiener_hunt_estimate(spfft.fft2(pb.y), pb.op.abs2, L2, sigma)
+    return {"lam": lam, "sigma": s, "criterion": crit}
+
+
+def wiener_hunt_deconvolve(
+    image: np.ndarray,
+    psf: np.ndarray,
+    sigma: float | None = None,
+    *,
+    lam: float | None = None,
+    prior: str = "laplacian",
+    boundary: str = "unknown",
+    mask: np.ndarray | None = None,
+    saturation: float | None = None,
+    n_fill_iter: int = 30,
+) -> np.ndarray:
+    """
+    Déconvolution de Wiener–Hunt (Hunt 1973) : filtre de Wiener dont le
+    spectre de la scène est remplacé par un a priori de régularité,
+    ``X = H* Y / (|H|² + λ |D|²)``, ``D`` laplacien (défaut).
+
+    Lecture bayésienne : maximum a posteriori de ``x`` pour un a priori
+    gaussien ``x ~ N(0, (γ_x DᵀD)⁻¹)`` et un bruit blanc gaussien de
+    précision ``γ_b`` ; ``λ = γ_x / γ_b``. Le filtre est celui de
+    :func:`tikhonov_deconvolve` (``regularizer=prior``) ; ce qui distingue
+    la méthode est le **choix de λ et de σ par maximum de vraisemblance
+    marginale** (la scène est intégrée analytiquement, exact et instantané
+    en Fourier), sans image de référence ni connaissance du bruit —
+    version déterministe du Wiener–Hunt non supervisé d'Orieux et al.
+    (2010), qui échantillonne la loi a posteriori (``wiener_unsupervised``).
+
+    Parameters
+    ----------
+    sigma : float, optional
+        Écart-type du bruit s'il est connu (alors seul λ est estimé) ;
+        ``None`` : estimé avec λ.
+    lam : float, optional
+        λ imposé (aucune estimation).
+    prior : {"laplacian", "gradient", "identity"}, default "laplacian"
+        Opérateur ``D`` de l'a priori : spectre de la scène supposé en
+        ``1/|D(ω)|²``, soit ``|ω|⁻⁴`` (laplacien, choix de Hunt),
+        ``|ω|⁻²`` (gradient) ou plat (identité).
+    boundary : str, default "unknown"
+        Marge inconnue (:mod:`eoqual.deconvolution.operators`).
+    mask, saturation, n_fill_iter :
+        Données incomplètes (§2.2 de la référence technique) ; λ et σ sont
+        alors estimés sur l'image pré-remplie.
+
+    Examples
+    --------
+    >>> x = deconvolve(y, psf, "wiener_hunt")                 # λ et σ estimés
+    >>> wiener_hunt_parameters(y, psf)["sigma"]               # σ estimé
+    """
+    pb = setup(image, psf, boundary, mask=mask, saturation=saturation)
+    L2 = regularizer_power(prior, pb.y.shape)
+    if lam is None:
+        from ..tuning.criteria import wiener_hunt_estimate
+
+        lam = wiener_hunt_estimate(spfft.fft2(pb.y), pb.op.abs2, L2, sigma)[0]
+    if lam < 0:
+        raise ValueError(f"lam doit être positif ou nul, reçu {lam}.")
+    W = np.conj(pb.op.otf) / np.maximum(pb.op.abs2 + lam * L2, 1e-300)
+    x = solve_with_fill(pb, lambda y: pb.op.solve_quadratic(spfft.fft2(y) * W, 1.0), n_fill_iter)
+    return pb.domain.restore(x)
+
+
 def tikhonov_deconvolve(
     image: np.ndarray,
     psf: np.ndarray,
@@ -259,10 +352,11 @@ def tikhonov_deconvolve(
         invariant d'échelle). ``None`` : choisi par ``rule``.
     regularizer : {"identity", "gradient", "laplacian"}, default "laplacian"
         Opérateur ``L``.
-    rule : {"gcv", "discrepancy"}, default "gcv"
+    rule : {"gcv", "discrepancy", "evidence"}, default "gcv"
         Choix automatique de ``λ`` quand ``lam=None`` : validation
-        croisée généralisée (sans connaissance du bruit), ou principe de
-        discrépance de Morozov (``‖h ∗ x − y‖² = N σ²``) — voir
+        croisée généralisée (sans connaissance du bruit), principe de
+        discrépance de Morozov (``‖h ∗ x − y‖² = N σ²``) ou vraisemblance
+        marginale de Wiener–Hunt (``sigma`` utilisé s'il est donné) — voir
         :mod:`eoqual.deconvolution.tuning.criteria`. Sur données
         incomplètes, λ est choisi sur l'image pré-remplie.
     boundary : str, default "unknown"
@@ -284,7 +378,7 @@ def tikhonov_deconvolve(
     if lam is None:
         from ..tuning.criteria import select_lambda
 
-        lam = select_lambda(Y, pb.op.abs2, L2, rule=rule, sigma=resolve_sigma(pb.domain.restore(pb.y), sigma) if rule == "discrepancy" else None)
+        lam = select_lambda(Y, pb.op.abs2, L2, rule=rule, sigma=resolve_sigma(pb.domain.restore(pb.y), sigma) if rule == "discrepancy" else (sigma if rule == "evidence" else None))
     if lam < 0:
         raise ValueError(f"lam doit être positif ou nul, reçu {lam}.")
     W = np.conj(pb.op.otf) / np.maximum(pb.op.abs2 + lam * L2, 1e-300)

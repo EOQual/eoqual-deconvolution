@@ -124,6 +124,9 @@ Exemples prêts à l'emploi dans `examples/` :
 | `tutorial.py` | chiffres et figures de [TUTORIEL.md](TUTORIEL.md) |
 | `tuning.py` | GCV, discrépance, optimisation avec et sans référence |
 | `blind.py` | déconvolution aveugle d'un flou de bougé |
+| `blind_optics.py` | déconvolution aveugle contrainte par l'optique, PSF variable dans le champ |
+| `blind_optics_benchmark.py`, `wiener_hunt_benchmark.py` | tableaux §6-7 de `BENCHMARK.md` |
+| `figures.py` | schémas PNG de la référence technique |
 | `benchmark.py` | tableaux de `BENCHMARK.md` |
 
 ---
@@ -135,7 +138,8 @@ Exemples prêts à l'emploi dans `examples/` :
 | `inverse` | linéaire | filtre inverse tronqué (référence) | — |
 | `wiener` | linéaire | Wiener, spectre du signal en loi de puissance ajusté sur l'image | — |
 | `wiener_unsupervised` | linéaire | Wiener bayésien non supervisé (Orieux et al. 2010, scikit-image) | — |
-| `tikhonov` | linéaire | Tikhonov (identité, gradient, laplacien), λ par GCV ou discrépance | — |
+| `wiener_hunt` | linéaire | Wiener–Hunt (Hunt 1973), λ et σ par vraisemblance marginale, sans réglage | — |
+| `tikhonov` | linéaire | Tikhonov (identité, gradient, laplacien), λ par GCV, discrépance ou vraisemblance marginale | — |
 | `richardson_lucy` | itérative | Richardson-Lucy, accélération Biggs-Andrews, option TV | — |
 | `landweber` | itérative | gradient projeté, arrêt par discrépance | — |
 | `fista_wavelet` | variationnelle | parcimonie en ondelettes, FISTA, *cycle spinning* | — |
@@ -143,6 +147,7 @@ Exemples prêts à l'emploi dans `examples/` :
 | `pnp_hqs` | Plug-and-Play | éclatement semi-quadratique, débruiteur eoqual-denoising | `pnp` / `deep` |
 | `pnp_admm` | Plug-and-Play | ADMM, débruiteur eoqual-denoising | `pnp` / `deep` |
 | `blind_l0` | aveugle | a priori L0 sur les gradients, multi-échelle (expérimental) | — |
+| `blind_optics` | aveugle | PSF contrainte par le modèle optique de l'instrument (diffraction, aberrations de Zernike bornées, jitter), variation dans le champ par tuiles | — |
 
 Toutes les méthodes sont des implémentations originales sous MIT, écrites
 à partir des publications citées (sauf `wiener_unsupervised`, qui appelle
@@ -153,7 +158,10 @@ réglages par défaut ; détail dans [BENCHMARK.md](BENCHMARK.md)) :
 `tv_primal_dual` est le meilleur compromis du socle (+4.5 à +6.9 dB sur
 l'image observée, 2 s) ; `pnp_admm` gagne encore 0.5 à 2.4 dB, au prix
 d'un temps de calcul 10 fois plus long ; les méthodes linéaires sont
-instantanées (+2.5 à +4.6 dB) et sont le bon point de départ. Signaler
+instantanées (+2.5 à +4.6 dB) et sont le bon point de départ —
+`wiener_hunt` sans aucun réglage. Si la PSF est inconnue mais
+l'instrument connu, `blind_optics` estime ses défauts (défocalisation,
+aberrations, jitter) dans des plages plausibles. Signaler
 les pixels manquants (`mask=`) est indispensable sur données réelles.
 
 ---

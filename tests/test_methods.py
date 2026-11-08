@@ -14,6 +14,7 @@ MIN_GAIN = {
     "inverse": 0.5,
     "wiener": 1.5,
     "wiener_unsupervised": 1.0,
+    "wiener_hunt": 1.5,
     "tikhonov": 1.5,
     "richardson_lucy": 1.5,
     "landweber": 1.5,

@@ -86,12 +86,25 @@ deconvolve(y, psf, "tikhonov", sigma=0.01, rule="discrepancy")
 | Wiener | 27.52 dB |
 | Tikhonov (GCV) | 27.60 dB |
 | Tikhonov (discrépance) | 26.66 dB |
+| Wiener–Hunt | 27.59 dB |
 
 Le paramètre de régularisation se choisit sans image de référence :
 validation croisée généralisée (GCV) ou principe de discrépance (le
 résidu doit valoir le bruit). `plotting.plot_gcv` trace les deux
 critères. GCV est le meilleur ici ; la discrépance est plus sûre sur un
 flou de bougé (BENCHMARK.md).
+
+**Wiener–Hunt** (`"wiener_hunt"`) va plus loin : il traite la scène et
+le bruit comme aléatoires (scène gaussienne « lisse », bruit blanc) et
+choisit λ **et** σ comme les valeurs qui rendent l'image observée la plus
+probable — sans aucun réglage. Même résultat que Tikhonov (GCV), et σ en
+prime : 0.0096 estimé pour 0.01 vrai.
+
+```python
+from eoqual.deconvolution.backends.linear import wiener_hunt_parameters
+deconvolve(y, psf, "wiener_hunt")                 # λ et σ estimés
+wiener_hunt_parameters(y, psf)                    # {"lam": ..., "sigma": ..., "criterion": ...}
+```
 
 ## 4. Itérer : la semi-convergence
 
@@ -219,6 +232,22 @@ h = system_psf(wavelength=0.55e-6, diameter=0.3, focal_length=12.0, pixel_pitch=
 Avec cette PSF (25 px de support) : observée 27.44 dB, TV **33.24 dB**.
 `plot_mtf` compare sa FTM à celle d'une gaussienne : la coupure optique
 tombe exactement à Nyquist.
+
+**PSF inconnue, instrument connu.** Si la PSF n'a pas été mesurée mais
+que l'on connaît l'instrument (échantillonnage `Q = λf/(Dp)`, obturation,
+jitter), `blind_optics` estime seulement ses défauts — défocalisation,
+astigmatisme… — dans des plages plausibles, au lieu d'une PSF libre qui
+risque de confondre détails de la scène et flou :
+
+```python
+x = deconvolve(y, None, "blind_optics", sampling=1.0, obscuration=0.3,
+               free={"defocus": (0, 0.3), "astig_0": (-0.1, 0.1)},
+               fixed={"jitter": 0.35})
+```
+
+`optics_blind_deconvolve` renvoie aussi la PSF et les paramètres estimés,
+et découpe l'image en tuiles si la PSF varie dans le champ
+(`examples/blind_optics.py`, REFERENCE_TECHNIQUE.md §8.2).
 
 ## 8. Régler les paramètres
 

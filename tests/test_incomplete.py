@@ -9,7 +9,7 @@ from eoqual.deconvolution.simulate import add_noise, blur, simulate_observation
 from eoqual.metrics.fr.signal import psnr
 
 ITERATIVE = ["richardson_lucy", "landweber", "fista_wavelet", "tv_primal_dual"]
-LINEAR = ["inverse", "wiener", "tikhonov"]
+LINEAR = ["inverse", "wiener", "wiener_hunt", "tikhonov"]
 
 
 @pytest.fixture(scope="module")

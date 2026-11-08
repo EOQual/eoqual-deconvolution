@@ -3,12 +3,15 @@
 """
 Schémas de la documentation, régénérables :
 
-    python examples/figures.py          # écrit resources/boundary_modes.png
+    python examples/figures.py          # écrit resources/*.png
 
 - ``boundary_modes.png`` (REFERENCE_TECHNIQUE.md §2.1) : domaine de
   travail périodique des modes ``boundary="reflect"`` et
   ``boundary="unknown"`` — image observée (données connues) et marge
   (données inventées par miroir, ou inconnues).
+- ``optical_psfs.png`` (REFERENCE_TECHNIQUE.md §8.2) : PSF du modèle
+  optique de ``blind_optics`` (diffraction, défocalisation, astigmatisme,
+  coma, jitter) et coupes de leur FTM sous la borne de diffraction.
 
 Dépendance : matplotlib (installé avec eoqual-metrics).
 """
@@ -69,9 +72,58 @@ def boundary_modes(path: Path) -> None:
     plt.close(fig)
 
 
+def optical_psfs(path: Path) -> None:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    from eoqual.core.kernel import psf2otf
+    from eoqual.deconvolution.psf import optical_psf
+
+    q, eps, size, n = 2.0, 0.3, 21, 256           # Q = 2 (Nyquist) pour bien voir la forme
+    cases = [
+        ("diffraction seule", {}, 0.0),
+        ("défocalisation 0.15 onde RMS", {"defocus": 0.15}, 0.0),
+        ("astigmatisme 0.1", {"astig_0": 0.1}, 0.0),
+        ("coma 0.1", {"coma_x": 0.1}, 0.0),
+        ("défoc. 0.1 + jitter 0.5 px", {"defocus": 0.1}, 0.5),
+    ]
+    fig, axes = plt.subplots(2, len(cases), figsize=(14, 5.8), dpi=130,
+                             gridspec_kw={"height_ratios": [1, 0.9]})
+    f = np.fft.fftfreq(n)[: n // 2]
+    ref = np.abs(psf2otf(optical_psf(q, obscuration=eps, size=size), (n, n)))
+    for k, (title, z, jit) in enumerate(cases):
+        h = optical_psf(q, zernike=z, obscuration=eps, jitter_sigma=jit, size=size)
+        ax = axes[0, k]
+        ax.imshow(np.sqrt(h), cmap="magma")
+        ax.set_title(title, fontsize=9)
+        ax.axis("off")
+        H = np.abs(psf2otf(h, (n, n)))
+        ax = axes[1, k]
+        ax.plot(f, ref[0, : n // 2], "k:", lw=1.2, label="diffraction (borne)")
+        ax.plot(f, H[0, : n // 2], lw=1.6, label="|H| ligne")
+        ax.plot(f, H[: n // 2, 0], lw=1.2, ls="--", label="|H| colonne")
+        ax.set_ylim(0, 1.02)
+        ax.set_xlabel("fréquence (cycles/pixel)", fontsize=8)
+        ax.tick_params(labelsize=7)
+        ax.grid(alpha=0.3)
+        if k == 0:
+            ax.set_ylabel("module de la FTM", fontsize=8)
+            ax.legend(fontsize=7, loc="upper right")
+    fig.suptitle("Modèle optique de blind_optics : pupille annulaire (ε = 0.3), Q = λf/(Dp) = 2, pixel intégré "
+                 "— PSF en √intensité, FTM jamais au-dessus de la diffraction", fontsize=10)
+    fig.tight_layout(rect=(0, 0, 1, 0.95))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path)
+    plt.close(fig)
+
+
 def main() -> None:
-    boundary_modes(RESOURCES / "boundary_modes.png")
-    print(f"Écrit : {RESOURCES / 'boundary_modes.png'}")
+    for name, func in (("boundary_modes.png", boundary_modes), ("optical_psfs.png", optical_psfs)):
+        func(RESOURCES / name)
+        print(f"Écrit : {RESOURCES / name}")
 
 
 if __name__ == "__main__":

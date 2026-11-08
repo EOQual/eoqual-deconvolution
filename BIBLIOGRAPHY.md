@@ -16,6 +16,10 @@ pour écrire les méthodes de ce paquet (voir
   regularization and point spread function parameters for Wiener-Hunt
   deconvolution", *JOSA A* 27(7), 1593-1607, 2010. —
   `wiener_unsupervised` (implémentation de scikit-image).
+- B. R. Hunt, "The application of constrained least squares estimation
+  to image restoration by digital computer", *IEEE Trans. Computers*
+  C-22(9), 805-812, 1973. — `wiener_hunt` (filtre à a priori
+  laplacien).
 - A. N. Tikhonov, V. Y. Arsenin, *Solutions of Ill-Posed Problems*,
   Winston, 1977. — `tikhonov`.
 - R. C. Gonzalez, R. E. Woods, *Digital Image Processing*, 4ᵉ éd.,
@@ -26,6 +30,13 @@ pour écrire les méthodes de ce paquet (voir
 - G. H. Golub, M. Heath, G. Wahba, "Generalized cross-validation as a
   method for choosing a good ridge parameter", *Technometrics* 21(2),
   215-223, 1979. — GCV.
+- D. J. C. MacKay, "Bayesian interpolation", *Neural Computation* 4(3),
+  415-447, 1992. — vraisemblance marginale (« evidence ») pour choisir
+  les hyperparamètres (`wiener_hunt`, `rule="evidence"`).
+- R. Molina, "On the hierarchical Bayesian approach to image
+  restoration: applications to astronomical problems", *IEEE TPAMI*
+  16(11), 1122-1128, 1994. — hyperparamètres de restauration par
+  vraisemblance marginale.
 - V. A. Morozov, "On the solution of functional equations by the method
   of regularization", *Soviet Math. Dokl.* 7, 414-417, 1966. — principe
   de discrépance.
@@ -123,6 +134,26 @@ pour écrire les méthodes de ce paquet (voir
   projections onto the ℓ1-ball for learning in high dimensions", *ICML*,
   2008. — projection sur le simplexe.
 
+### Déconvolution aveugle contrainte par l'optique (`blind_optics`)
+
+- A. Levin, Y. Weiss, F. Durand, W. T. Freeman, "Efficient marginal
+  likelihood optimization in blind deconvolution", *CVPR*, 2011. —
+  pourquoi estimer la PSF en intégrant l'image plutôt que par maximum
+  joint.
+- L. Blanco, L. M. Mugnier, "Marginal blind deconvolution of adaptive
+  optics retinal images", *Optics Express* 19(23), 23227-23239, 2011. —
+  déconvolution marginale à PSF paramétrique.
+- L. M. Mugnier, T. Fusco, J.-M. Conan, "MISTRAL: a myopic
+  edge-preserving image restoration method, with application to
+  astronomical adaptive-optics-corrected long-exposure images", *JOSA A*
+  21(10), 1841-1854, 2004. — déconvolution « myope » (PSF partiellement
+  connue).
+- R. J. Noll, "Zernike polynomials and atmospheric turbulence", *JOSA*
+  66(3), 207-211, 1976. — polynômes de Zernike (eoqual-core).
+- J. W. Goodman, *Introduction to Fourier Optics*, 3ᵉ éd., Roberts &
+  Company, 2005. — PSF de Fraunhofer d'une pupille aberrée, borne de la
+  FTM par la diffraction.
+
 ## Données incomplètes et bords
 
 - M. S. C. Almeida, M. A. T. Figueiredo, "Deconvolving images with
@@ -140,6 +171,14 @@ pour écrire les méthodes de ce paquet (voir
   2018. — ADMM avec recadrage (bords inconnus).
 
 ## Bords et PSF
+
+- D. Wulich, N. S. Kopeika, "Image resolution limits resulting from
+  mechanical vibrations", *Optical Engineering* 26(6), 529-533, 1987. —
+  FTM d'un mouvement linéaire, d'une vibration sinusoïdale et d'une
+  vibration aléatoire ; jitter et filé (REFERENCE_TECHNIQUE.md §10.1).
+- R. D. Fiete, *Modeling the Imaging Chain of Digital Cameras*, SPIE
+  Press, 2010. — FTM du jitter et du filé dans la chaîne image d'un
+  satellite d'observation.
 
 - L. Moisan, "Periodic plus smooth image decomposition", *JMIV* 39(2),
   161-179, 2011. — `boundary="perdecomp"` (eoqual-core).

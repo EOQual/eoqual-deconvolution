@@ -1,0 +1,10 @@
+{
+  // Espace de recherche de « wiener_hunt ». Par défaut λ et σ sont estimés par
+  // vraisemblance marginale : n'optimiser que pour comparer à ce choix
+  // automatique (λ imposé) ou choisir l'opérateur de l'a priori.
+  "search_space": [
+    {"name": "lam", "type": "float", "low": 1e-5, "high": 1.0, "prior": "log-uniform"},
+    {"name": "prior", "type": "categorical", "categories": ["laplacian", "gradient", "identity"]},
+  ],
+  "initial_guess": {"lam": 1e-2, "prior": "laplacian"},
+}

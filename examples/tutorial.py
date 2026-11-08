@@ -19,6 +19,7 @@ from eoqual.deconvolution import deconvolve
 from eoqual.deconvolution.plotting import (
     ConvergenceRecorder, plot_convergence, plot_gcv, plot_mtf, plot_psf, plot_restoration,
 )
+from eoqual.deconvolution.backends.linear import wiener_hunt_parameters
 from eoqual.deconvolution.psf import gaussian_psf, motion_psf, system_psf
 from eoqual.deconvolution.simulate import add_noise, blur, simulate_observation
 from eoqual.metrics.fr.signal import psnr
@@ -52,9 +53,12 @@ def main() -> None:
         "Wiener": deconvolve(blurred, psf, "wiener", sigma=SIGMA),
         "Tikhonov (GCV)": deconvolve(blurred, psf, "tikhonov"),
         "Tikhonov (discrépance)": deconvolve(blurred, psf, "tikhonov", sigma=SIGMA, rule="discrepancy"),
+        "Wiener–Hunt": deconvolve(blurred, psf, "wiener_hunt"),
     }
     for k, v in lin.items():
         print(f"   {k:22s} : {_p(scene, v)}")
+    est = wiener_hunt_parameters(blurred, psf)
+    print(f"   Wiener–Hunt : σ estimé {est['sigma']:.4f} (vrai {SIGMA})")
     plot_gcv(blurred, psf, sigma=SIGMA).write_html(OUT / "tutorial_3_gcv.html")
 
     print("4. Itérations et semi-convergence")
