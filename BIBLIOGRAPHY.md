@@ -219,6 +219,11 @@ pour écrire les méthodes de ce paquet (voir
   ``pierre-weiss/deepblur`` (CC0 1.0), poids ``pweiss/DeepBlur`` (CC BY-NC
   4.0). — Deep-Blur, estimateur appris envisagé pour ``blind_optics``
   (REFERENCE_TECHNIQUE.md §12).
+- G. Carbajal, P. Vitoria, J. Lezama, P. Musé, "Blind motion deblurring
+  with pixel-wise kernel estimation via kernel prediction networks",
+  *IEEE Trans. Computational Imaging* 9, 928-943, 2023. —
+  `deepinv.models.KernelIdentificationNetwork` (noyaux libres, à ne pas
+  confondre avec Deep-Blur).
 - T. Vo, C. Y. Park, "ErA: Error-aware deep unrolling network for single
   image defocus deblurring", *NeurIPS 2025 Workshop COML*, arXiv:2606.06540
   (CC BY 4.0). — ErA (pas de code publié, REFERENCE_TECHNIQUE.md §12).

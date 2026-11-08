@@ -1032,12 +1032,34 @@ connus).
   reprenables ; code d'entraînement non publié (version mise à jour
   annoncée dans DeepInv, BSD-3-Clause).
 
+  *État dans DeepInv* (vérifié le 2026-11-08 sur la branche principale,
+  commit ``e34c06f`` du 2026-11-06, ses tickets et demandes de fusion, et la
+  copie personnelle ``pierre-weiss/deepinv``) : Deep-Blur **n'y est pas
+  recodé**. On y trouve seulement la génération de PSF —
+  ``DiffractionBlurGenerator`` (Zernike, 2D/3D) et
+  ``ProductConvolutionBlurGenerator`` / ``SpaceVaryingBlur`` (flou
+  variable par base de PSF et poids) ; des branches non fusionnées de la
+  copie personnelle (juin 2026) portent sur un générateur de PSF
+  polychromatique. **Pas de poids Deep-Blur** : seuls existent ceux de
+  ``pweiss/DeepBlur`` (CC BY-NC 4.0). **Pas de code d'entraînement** :
+  ni dans le dépôt d'origine (le README annonce qu'il ne sera pas publié),
+  ni dans DeepInv, qui fournit seulement les briques pour l'écrire
+  (générateurs de PSF à tirage aléatoire, entraîneur générique). À ne
+  pas confondre : ``deepinv.models.KernelIdentificationNetwork`` est une
+  autre méthode (Carbajal et al. 2023, J-MKPD), qui estime des noyaux
+  **libres** (33 × 33, bougé) et leurs poids dans l'image, pas des
+  coefficients de Zernike (poids ``deepinv/kernel_identification`` sous
+  BSD-3-Clause ; dépôt d'origine sans licence, code « adapté avec la
+  permission de l'auteur »).
+
   *Le nécessaire* :
 
   1. **Choisir la voie du code** : réutiliser l'architecture CC0 (avec
      notices des fichiers tiers et une exception documentée à la règle
      « écrit depuis les seules publications », THIRD_PARTY_LICENSES.md §3)
-     ou attendre la version de DeepInv et en dépendre (extra ``deep``).
+     — la seule voie aujourd'hui, la version DeepInv n'existant pas
+     encore ; DeepInv peut toutefois servir à générer les PSF
+     d'entraînement, rôle que tient déjà ``optical_psf``.
   2. **Écrire l'entraînement** (non publié) : script reproductible
      ``examples/train_optics_identification.py``, graines fixées, GPU.
   3. **Réentraîner pour l'observation de la Terre** : vignettes

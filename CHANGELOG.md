@@ -6,6 +6,20 @@ dans `REFERENCE_TECHNIQUE.md`, annexe A.
 
 ## Version History
 
+0.4.3 (2026-11-08)
+
+:   -   Documentation seulement, aucun changement de code ni de résultat.
+    -   `REFERENCE_TECHNIQUE.md` §12 (Deep-Blur) : état vérifié dans
+        DeepInv (commit `e34c06f`, 2026-11-06) — méthode **non recodée**,
+        ni poids ni code d'entraînement ; seule la génération de PSF
+        (`DiffractionBlurGenerator`, `ProductConvolutionBlurGenerator`) y
+        figure. La voie « dépendre de la version DeepInv » est retirée :
+        reste la réutilisation de l'architecture CC0 avec un entraînement
+        à écrire. Distinction avec `KernelIdentificationNetwork`
+        (Carbajal et al. 2023, noyaux libres).
+    -   `THIRD_PARTY_LICENSES.md` §3.1 : ce constat, et une ligne pour
+        `KernelIdentificationNetwork` (code et poids BSD-3-Clause).
+
 0.4.2 (2026-11-08)
 
 :   -   Documentation seulement, aucun changement de code ni de résultat.
