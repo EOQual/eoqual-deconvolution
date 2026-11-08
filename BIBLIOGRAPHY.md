@@ -213,6 +213,12 @@ pour écrire les méthodes de ce paquet (voir
   extension « DWDN: Deep Wiener deconvolution network for non-blind image
   deblurring », arXiv:2103.09962. — DWDN (code sans licence : à
   réimplémenter depuis l'article, REFERENCE_TECHNIQUE.md §12).
+- V. Debarnot, P. Weiss, "Deep-blur: Blind identification and deblurring
+  with convolutional neural networks", *Biological Imaging* 4, e13, 2024,
+  doi:10.1017/S2633903X24000096 (CC BY 4.0) ; code
+  ``pierre-weiss/deepblur`` (CC0 1.0), poids ``pweiss/DeepBlur`` (CC BY-NC
+  4.0). — Deep-Blur, estimateur appris envisagé pour ``blind_optics``
+  (REFERENCE_TECHNIQUE.md §12).
 - T. Vo, C. Y. Park, "ErA: Error-aware deep unrolling network for single
   image defocus deblurring", *NeurIPS 2025 Workshop COML*, arXiv:2606.06540
   (CC BY 4.0). — ErA (pas de code publié, REFERENCE_TECHNIQUE.md §12).

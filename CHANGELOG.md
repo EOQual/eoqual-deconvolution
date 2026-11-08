@@ -6,6 +6,22 @@ dans `REFERENCE_TECHNIQUE.md`, annexe A.
 
 ## Version History
 
+0.4.2 (2026-11-08)
+
+:   -   Documentation seulement, aucun changement de code ni de résultat.
+    -   `REFERENCE_TECHNIQUE.md` §12 : **Deep-Blur** (Debarnot & Weiss
+        2024), identification apprise des coefficients de Zernike d'une
+        PSF puis restauration déroulée — candidat pour un estimateur
+        `estimator="learned"` de `blind_optics` ; démarche (voie du code,
+        entraînement à écrire, réentraînement pour l'observation de la
+        Terre, signe, validation sur le banc §8.2.7) et limites (domaine
+        de la microscopie, un réseau par famille de PSF, validation
+        visuelle, GPU).
+    -   `THIRD_PARTY_LICENSES.md` §3.1 : licences pièce par pièce du dépôt
+        `pierre-weiss/deepblur` (code CC0, fichiers tiers MIT et
+        Apache-2.0) et des poids (CC BY-NC 4.0).
+    -   `BIBLIOGRAPHY.md` (pistes) : Debarnot & Weiss 2024.
+
 0.4.1 (2026-11-08)
 
 :   -   Documentation seulement, aucun changement de code ni de résultat.

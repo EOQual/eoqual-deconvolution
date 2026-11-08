@@ -88,6 +88,7 @@ ici sous MIT.
 | Méthode | Code et poids publiés | Licence | Statut |
 |---|---|---|---|
 | DWDN (Dong, Roth & Schiele, NeurIPS 2020) | GitHub `dongjxjx/dwdn` et GitLab du MPI, poids `model_DWDN.pt` | **aucune** (tous droits réservés) | 🔴 ni code ni poids réutilisables ; réimplémentation propre depuis l'article envisagée (REFERENCE_TECHNIQUE.md §12) |
+| Deep-Blur (Debarnot & Weiss, *Biological Imaging* 2024) | GitHub `pierre-weiss/deepblur` (architecture, générateur de PSF, démo) ; poids sur Hugging Face `pweiss/DeepBlur` ; entraînement non publié | code des auteurs **CC0 1.0** ; fichiers tiers embarqués : `basicblock.py`, `network_unet.py` (KAIR, MIT ; d'après BasicSR, Apache-2.0), `didn_class.py` (sigmanet, Imperial College, MIT), `common.py`, `DownSampler.py` (Deep Image Prior, Apache-2.0, l'auteur demande à être contacté pour un usage commercial) ; **poids CC BY-NC 4.0** | 🟡 code réutilisable (CC0 ; notices des fichiers tiers à conserver, exception au §3 à documenter si repris) ; 🔴 poids non commerciaux, non reprenables ; estimateur appris envisagé (REFERENCE_TECHNIQUE.md §12) |
 | ErA (Vo & Park, NeurIPS 2025 COML) | aucun | article CC BY 4.0 | 🟡 réimplémentation propre possible mais article incomplet ; idées transposables sans apprentissage (REFERENCE_TECHNIQUE.md §12) |
 
 ## 4. Images

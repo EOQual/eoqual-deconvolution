@@ -12,7 +12,7 @@ ou estimée, pensées pour l'observation de la Terre.
 Voir ``README.md`` et ``REFERENCE_TECHNIQUE.md``.
 """
 
-__version__ = "0.4.1"
+__version__ = "0.4.2"
 __title__ = "eoqual.deconvolution"
 __description__ = "Image deconvolution methods for Earth observation"
 __url__ = "https://github.com/EOQual/eoqual-deconvolution"

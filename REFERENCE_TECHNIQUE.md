@@ -1000,6 +1000,76 @@ connus).
   l'entraînement, et gain à démontrer sur des flous d'instrument —
   réguliers, sans les noyaux de bougé complexes où l'article mesure son
   avance.
+- **Deep-Blur — identification apprise d'une PSF paramétrique**
+  (Debarnot & Weiss, *Biological Imaging* 4, e13, 2024 ; article CC BY
+  4.0) : la méthode publiée la plus proche de ``blind_optics`` (§8.2).
+  Même hypothèse — une PSF physique décrite par quelques coefficients de
+  Zernike (Z4 à Z11, tirés dans ±0.15, pupille 2D ; variante à flou
+  variable dans le champ par base de PSF et poids) —, mais l'estimateur
+  est **appris** : un ResNet (11 M de paramètres) lit l'image floue et
+  renvoie directement les coefficients ; un Douglas–Rachford déroulé
+  (4 itérations, DRUNet comme proximal, départ par gradient conjugué)
+  restaure ensuite l'image avec la PSF **estimée**, ce qui lui apprend à
+  absorber l'erreur d'identification. Entraînement : MS COCO, bruit
+  poisson-gaussien. Annoncé : coefficients à 5 % près en moyenne sans
+  bruit, PSF estimée à 13 dB (8 dB à fort bruit) quand les méthodes
+  classiques comparées sont négatives, 0.3 s par image 400 × 400 sur GPU.
+
+  *Intérêt* : un réseau exploite les statistiques de la scène au-delà de
+  l'ordre deux — potentiellement ce qui manque à ``blind_optics`` pour la
+  petite défocalisation confondue avec le jitter et pour les aberrations
+  impaires (§8.2.5, §8.2.7). Forme envisagée : un troisième estimateur,
+  ``estimator="learned"`` (extra ``deep``), qui garde le modèle optique
+  (``optical_psf``), les tuiles et la restauration du paquet.
+
+  *Licences* (vérifiées le 2026-11-08, détail dans
+  THIRD_PARTY_LICENSES.md §3.1) : code des auteurs sous **CC0 1.0**
+  (dépôt ``pierre-weiss/deepblur``, publié en janvier 2025), donc
+  réutilisable ; fichiers tiers embarqués sous leurs licences d'origine,
+  permissives (KAIR et sigmanet : MIT ; BasicSR et Deep Image Prior :
+  Apache-2.0, notices à conserver) ; **poids** (Hugging Face
+  ``pweiss/DeepBlur``) sous **CC BY-NC 4.0**, non commerciale : non
+  reprenables ; code d'entraînement non publié (version mise à jour
+  annoncée dans DeepInv, BSD-3-Clause).
+
+  *Le nécessaire* :
+
+  1. **Choisir la voie du code** : réutiliser l'architecture CC0 (avec
+     notices des fichiers tiers et une exception documentée à la règle
+     « écrit depuis les seules publications », THIRD_PARTY_LICENSES.md §3)
+     ou attendre la version de DeepInv et en dépendre (extra ``deep``).
+  2. **Écrire l'entraînement** (non publié) : script reproductible
+     ``examples/train_optics_identification.py``, graines fixées, GPU.
+  3. **Réentraîner pour l'observation de la Terre** : vignettes
+     d'orthophotographies ouvertes (Licence Ouverte 2.0) floutées par
+     ``optical_psf`` à l'échantillonnage ``Q``, l'obturation et la pupille
+     de l'instrument visé, coefficients tirés dans les plages de
+     ``OpticalModel.free``, jitter et filé (§10.1), bruit
+     poisson-gaussien — un réseau par famille d'instruments.
+  4. **Traiter le signe** : vérifier si le réseau lève l'ambiguïté
+     ``φ → −φ`` (l'article ne le dit pas) ; sinon, contraindre les
+     plages comme ``blind_optics``.
+  5. **Valider** sur le banc §8.2.7 (mêmes cas, mêmes scènes) face aux
+     estimateurs ``evidence`` et ``l0`` : erreur sur θ, PSNR après
+     restauration, robustesse hors des plages d'entraînement ; publier
+     les poids sous licence explicite (MIT ou CC BY 4.0), vérifiés par
+     empreinte.
+
+  *Limites relevées* :
+
+  - domaine d'origine : microscopie à fluorescence (objectif ×100,
+    ouverture 1.49), images 400 × 400 en niveaux de gris ; poids publiés
+    inadaptés à un instrument d'observation de la Terre, et non
+    commerciaux ;
+  - un réseau d'identification est propre à une famille de PSF (Q,
+    pupille, modes, plages) : tout changement impose un réentraînement ;
+  - validation sur données réelles seulement visuelle dans l'article (pas
+    de vérité) ; les auteurs notent que la méthode s'étend mal aux
+    variations rapides de la PSF ;
+  - comme toute méthode apprise : GPU, généralisation hors des plages
+    d'entraînement non garantie — d'où le maintien des estimateurs
+    ``evidence`` et ``l0``, interprétables, à côté.
+
 - **ErA — déroulement d'ALM « conscient de l'erreur »** (Vo & Park,
   atelier NeurIPS 2025 COML ; arXiv 2606.06540, licence CC BY 4.0) :
   déconvolution **aveugle** d'un flou de défocalisation **variable dans
