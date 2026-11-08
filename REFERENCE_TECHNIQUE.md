@@ -938,6 +938,129 @@ connus).
   des images de télédétection, et résultat **stochastique** pouvant
   « inventer » des détails plausibles — inacceptable sans protocole de
   validation pour une mesure quantitative.
+- **DWDN — Wiener profond** (Dong, Roth & Schiele, NeurIPS 2020 ;
+  extension DWDN+, arXiv 2103.09962) : déconvolution **non aveugle** qui
+  applique un filtre de Wiener dans un espace de caractéristiques appris
+  (une convolution et trois blocs résiduels), avec rapport bruit/signal
+  estimé par caractéristique, puis un raffinement multi-échelle
+  encodeur-décodeur du grossier au fin ; entraîné de bout en bout, un seul
+  modèle pour un bruit de 0 à 5 %. Annoncé +2 à +3 dB sur IRCNN et FNBD
+  (jeux de Levin et de Sun, bruit 1 %). Prolongement naturel de
+  ``wiener`` / ``wiener_hunt`` : la PSF reste une entrée, et
+  ``blind_optics`` peut la fournir.
+
+  *Licence* (vérifiée le 2026-11-08) : ni le dépôt GitHub
+  (``dongjxjx/dwdn``) ni le projet d'origine (GitLab du MPI) ne portent de
+  licence ; sans licence, tous droits réservés — **ni le code ni les poids
+  publiés (``model_DWDN.pt``) ne peuvent être repris**, même adaptés,
+  dans ce paquet MIT. L'article (licence arXiv, non exclusive) ne donne
+  aucun droit sur le code ; les idées et les équations restent libres.
+
+  *Le nécessaire pour l'ajouter* :
+
+  1. **Réimplémentation propre** depuis l'article seul (comme le reste du
+     paquet, sans consulter le dépôt) : module ``backends/deep_wiener.py``
+     (PyTorch, extra ``deep``), signature commune
+     ``deep_wiener_deconvolve(image, psf, sigma=None, weights=...)`` ;
+     Wiener en caractéristiques calculé en Fourier avec l'OTF de la PSF
+     (``eoqual.core.kernel.psf2otf``) et les bords de ``operators``
+     (marge inconnue) ; architecture et pertes décrites dans un fichier
+     de conception cité dans THIRD_PARTY_LICENSES.md §3.
+  2. **Données d'entraînement de licence claire**, adaptées à
+     l'observation de la Terre : orthophotographies ouvertes (Licence
+     Ouverte 2.0, Etalab, réutilisation commerciale permise), réduites et
+     découpées en vignettes 256 × 256 ; **pas** les jeux de l'article
+     (BSD, Waterloo Exploration : photographies, conditions d'usage à
+     vérifier une à une). Registre des sources d'images et de leurs
+     licences versionné avec le script d'entraînement.
+  3. **Simulation des paires** (vignette nette, vignette floue bruitée)
+     avec les briques du paquet : ``psf.optical_psf`` (Q de 0.7 à 2,
+     obturation, défocalisation et astigmatisme tirés dans des plages
+     plausibles, jitter), ``motion_psf`` pour le filé (§10.1), bruit
+     gaussien et poisson-gaussien (``simulate.add_noise``) — le réseau
+     apprend sur les flous d'instruments, pas sur des noyaux de bougé
+     de photographie.
+  4. **Entraînement** : script ``examples/train_deep_wiener.py``
+     (reproductible, graines fixées), GPU indispensable, journal des
+     hyperparamètres ; poids publiés sous une licence explicite (MIT ou
+     CC-BY 4.0) dans une *release* du dépôt, téléchargés à la demande et
+     vérifiés par empreinte SHA-256 (jamais dans le paquet pip).
+  5. **Validation** avant toute annonce : banc de BENCHMARK.md (mêmes
+     scènes, flous et bruits) et banc optique (§8.2.7) face à
+     ``wiener_hunt``, ``tv_primal_dual`` et ``pnp_hqs`` + DRUNet ;
+     robustesse à une PSF fausse (défocalisation mal estimée), à des
+     tailles et Q hors de l'entraînement, et vérification qu'aucun détail
+     n'est inventé (écart à la vérité par bande de fréquence, au-delà de
+     la coupure de la MTF).
+  6. **Tests** : contrat d'appel et petit modèle aléatoire (sans poids)
+     marqués ``deep`` ; test de non-régression sur les poids publiés
+     (empreinte et PSNR sur une scène fixe).
+
+  *Pourquoi pas encore* : pas de code ni de poids réutilisables, coût de
+  l'entraînement, et gain à démontrer sur des flous d'instrument —
+  réguliers, sans les noyaux de bougé complexes où l'article mesure son
+  avance.
+- **ErA — déroulement d'ALM « conscient de l'erreur »** (Vo & Park,
+  atelier NeurIPS 2025 COML ; arXiv 2606.06540, licence CC BY 4.0) :
+  déconvolution **aveugle** d'un flou de défocalisation **variable dans
+  l'image**. Modèle : le flou en chaque pixel est une combinaison d'une
+  petite base de noyaux appris (61 × 61) par des poids propres au pixel,
+  prédits par un réseau d'estimation de noyau ; un terme d'erreur
+  parcimonieux ``E`` absorbe les défauts du noyau estimé :
+
+      min_{x,h,E}  ½‖h ⊗ x − y + E‖² + ‖E‖₁ + φ(x) + f(E)
+
+  résolu par lagrangien augmenté (ALM) avec éclatement ``U = h ⊗ x``,
+  ``Z = x``, ``P = E`` : mises à jour fermées pour ``U`` et ``x`` (Fourier),
+  seuillage doux pour ``E``, deux ResUNet pour les proximaux de ``φ`` et
+  ``f`` ; ``K = 10`` itérations déroulées et entraînées de bout en bout
+  (perte ``ω‖x − x_vrai‖₁ + (1 − ω)‖h ⊗ x − y‖₁``).
+
+  *Licence et disponibilité* (vérifiées le 2026-11-08) : article sous CC BY
+  4.0 (texte et figures réutilisables avec attribution) ; **aucun code ni
+  poids publiés** (ni sur arXiv, ni sur la page ou les dépôts GitHub de
+  l'auteur). Une réimplémentation propre depuis l'article est donc
+  possible sans obstacle de licence — et c'est le seul chemin.
+
+  *Limites relevées* :
+
+  - article court (4 pages + annexe) : l'architecture du réseau
+    d'estimation de noyau, la taille de la base, les ResUNet et les
+    hyperparamètres (``λ₁₋₃``, ``ω``) ne sont pas décrits — la méthode
+    n'est pas reproductible telle quelle, il faudrait les reconstruire ;
+  - domaine : photographies d'appareils grand public, flou de
+    défocalisation de profondeur de champ (noyaux jusqu'à 61 px), appris
+    sur 350 paires du jeu DPDD (*dual-pixel*, conditions d'usage à
+    vérifier) ; sans rapport avec les flous réguliers, de quelques pixels,
+    d'un instrument d'observation de la Terre ;
+  - gain annoncé faible : +0.4 dB sur DPDD, +0.1 dB sur RealDOF, en
+    dessous de concurrents sur RTF, LPIPS moins bon que certains ;
+  - le terme ``E`` est appris par un réseau : rien ne garantit qu'il
+    n'absorbe pas une partie de la scène, ce qui est inacceptable pour une
+    mesure quantitative sans protocole de validation ;
+  - comme toute méthode apprise : GPU pour l'entraînement, généralisation
+    hors domaine non garantie.
+
+  *Ce qui est transposable sans apprentissage* — à évaluer d'abord, car
+  peu coûteux et compatible avec les méthodes du socle :
+
+  1. **Terme d'erreur parcimonieux** pour une PSF imparfaite :
+     ``min_{x,E} ½‖h ∗ x − y + E‖² + μ‖E‖₁ + λ TV(x)`` dans
+     ``tv_primal_dual`` (un proximal de plus : seuillage doux de ``E``).
+     Cible : les PSF estimées par ``blind_optics`` ou mesurées avec une
+     erreur. Validation : PSNR en fonction de l'erreur de PSF
+     (défocalisation fausse de ±0.05 onde RMS), et vérification que ``E``
+     reste concentré sur les contours (là où une erreur de PSF se voit),
+     pas sur les textures. Lien : Ji & Wang (2012), déconvolution robuste à
+     un noyau inexact.
+  2. **Base de PSF et poids par pixel** pour la variation dans le champ :
+     au lieu du recollement par tuiles de ``blind_optics`` (§8.2.6), une
+     petite base (PSF du modèle optique en quelques points du champ, ou
+     ses composantes principales) et des poids qui varient lentement
+     (polynôme de la position) ; l'opérateur ``x ↦ Σ_k w_k ⊙ (h_k ∗ x)``
+     reste rapide (K FFT) et s'intègre aux méthodes itératives (Nagy &
+     O'Leary 1998 ; Denis et al. 2015). Validation : banc
+     ``examples/blind_optics.py`` (courbure de champ), contre les tuiles.
 - **DPIR** (débruiteur DRUNet et calendrier dédiés) et **calcul sur GPU**
   (PyTorch) des méthodes itératives.
 - **Bruit de Poisson** : déconvolution Poisson + TV par ADMM (PIDAL,

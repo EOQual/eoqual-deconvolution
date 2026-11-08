@@ -208,6 +208,23 @@ pour écrire les méthodes de ce paquet (voir
 - H. Chung, J. Kim, M. T. McCann, M. L. Klasky, J. C. Ye, "Diffusion
   posterior sampling for general noisy inverse problems", *ICLR*, 2023. —
   DPS.
+- J. Dong, S. Roth, B. Schiele, "Deep Wiener deconvolution: Wiener meets
+  deep learning for image deblurring", *NeurIPS* 33, 1048-1059, 2020 ;
+  extension « DWDN: Deep Wiener deconvolution network for non-blind image
+  deblurring », arXiv:2103.09962. — DWDN (code sans licence : à
+  réimplémenter depuis l'article, REFERENCE_TECHNIQUE.md §12).
+- T. Vo, C. Y. Park, "ErA: Error-aware deep unrolling network for single
+  image defocus deblurring", *NeurIPS 2025 Workshop COML*, arXiv:2606.06540
+  (CC BY 4.0). — ErA (pas de code publié, REFERENCE_TECHNIQUE.md §12).
+- H. Ji, K. Wang, "Robust image deblurring with an inaccurate blur
+  kernel", *IEEE TIP* 21(4), 1624-1634, 2012. — terme d'erreur
+  parcimonieux pour une PSF inexacte.
+- J. G. Nagy, D. P. O'Leary, "Restoring images degraded by spatially
+  variant blur", *SIAM J. Sci. Comput.* 19(4), 1063-1082, 1998. — PSF
+  variable par interpolation d'une base de PSF.
+- L. Denis, É. Thiébaut, F. Soulez, J.-M. Becker, R. Mourya, "Fast
+  approximations of shift-variant blur", *IJCV* 115(3), 253-278, 2015. —
+  même approche, comparaison des approximations.
 - M. A. T. Figueiredo, J. M. Bioucas-Dias, "Restoration of Poissonian
   images using alternating direction optimization", *IEEE TIP* 19(12),
   3133-3145, 2010. — PIDAL (Poisson + TV).

@@ -83,6 +83,13 @@ tiers. Le filtre de Wiener-Tikhonov et ses critères GCV et L-curve
 reprennent la formulation d'un prototype personnel de l'auteur, publié
 ici sous MIT.
 
+### 3.1 Méthodes étudiées, non reprises (vérifié le 2026-11-08)
+
+| Méthode | Code et poids publiés | Licence | Statut |
+|---|---|---|---|
+| DWDN (Dong, Roth & Schiele, NeurIPS 2020) | GitHub `dongjxjx/dwdn` et GitLab du MPI, poids `model_DWDN.pt` | **aucune** (tous droits réservés) | 🔴 ni code ni poids réutilisables ; réimplémentation propre depuis l'article envisagée (REFERENCE_TECHNIQUE.md §12) |
+| ErA (Vo & Park, NeurIPS 2025 COML) | aucun | article CC BY 4.0 | 🟡 réimplémentation propre possible mais article incomplet ; idées transposables sans apprentissage (REFERENCE_TECHNIQUE.md §12) |
+
 ## 4. Images
 
 Les tests, exemples et benchmarks utilisent l'image « astronaut »

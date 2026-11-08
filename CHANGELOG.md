@@ -6,6 +6,28 @@ dans `REFERENCE_TECHNIQUE.md`, annexe A.
 
 ## Version History
 
+0.4.1 (2026-11-08)
+
+:   -   Documentation seulement, aucun changement de code ni de résultat.
+    -   `REFERENCE_TECHNIQUE.md` §12 (évolutions envisagées) :
+        -   **DWDN** (Wiener profond, Dong et al. 2020) : code et poids
+            sans licence, donc non réutilisables ; démarche complète pour
+            une réimplémentation propre (données d'entraînement ouvertes
+            d'observation de la Terre, paires simulées avec `optical_psf`,
+            entraînement reproductible, poids sous licence explicite,
+            validation face à `wiener_hunt`, la TV et DRUNet) ;
+        -   **ErA** (déroulement d'ALM « conscient de l'erreur », Vo &
+            Park 2025) : méthode, licence (article CC BY 4.0, aucun code
+            publié), limites (article incomplet, domaine de la photographie,
+            gain faible, terme d'erreur appris), et deux idées
+            transposables sans apprentissage — terme d'erreur parcimonieux
+            pour une PSF imparfaite, base de PSF à poids variables dans le
+            champ — avec leur protocole de validation.
+    -   `BIBLIOGRAPHY.md` (pistes) : Dong et al. 2020, Vo & Park 2025,
+        Ji & Wang 2012, Nagy & O'Leary 1998, Denis et al. 2015.
+    -   `THIRD_PARTY_LICENSES.md` §3.1 : méthodes étudiées et non reprises,
+        avec le statut de leur licence.
+
 0.4.0 (2026-11-08)
 
 :   -   `wiener_hunt` (nouvelle méthode linéaire) : déconvolution de
