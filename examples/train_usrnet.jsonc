@@ -1,0 +1,48 @@
+{
+  // Réentraînement d'USRNet pour un instrument d'observation de la Terre
+  // (REFERENCE_TECHNIQUE.md §7.3). Toutes les plages sont des lois uniformes.
+
+  // Préparation des images nettes (orthophotographies RVB 8 bits encodées sRGB).
+  "images": {
+    "gamma": 2.2,     // linéarisation : le flou s'applique à la luminance linéaire
+    "reduce": 2       // moyenne 2 × 2 : vignettes nettes à l'échelle du pixel
+  },
+
+  // Loi des PSF : l'instrument visé. Q = λf/(Dp) ; aberrations en ondes RMS.
+  "psf": {
+    "size": 25,
+    "weights": {"optical": 0.8, "gaussian": 0.1, "motion": 0.1},
+    "sampling": [0.8, 1.5],
+    "obscuration": [0.2, 0.35],
+    "zernike": {
+      "defocus": [0.0, 0.3],
+      "astig_0": [-0.08, 0.08],
+      "astig_45": [-0.08, 0.08],
+      "coma_x": [-0.05, 0.05],
+      "coma_y": [-0.05, 0.05],
+      "spherical": [-0.05, 0.05]
+    },
+    "jitter": [0.0, 0.5],             // pixels
+    "gaussian_sigma": [0.5, 2.5],
+    "motion_length": [1.0, 4.0]       // filé résiduel (TDI), pixels
+  },
+
+  // Bruit : écart-type en fraction de la dynamique ; part poisson-gaussienne.
+  "noise": {"sigma": [0.0, 0.04], "zero_fraction": 0.1, "poisson_fraction": 0.5},
+
+  // Entraînement : réglage fin depuis les poids publiés (MIT, KAIR).
+  "training": {
+    "init_weights": "usrnet",         // "usrnet", "usrnet_tiny", un fichier, ou null (depuis zéro)
+    "iterations": 20000,
+    "batch_size": 8,
+    "patch": 96,
+    "lr": 5e-5,
+    "milestones": [0.5, 0.75],
+    "loss": "l1",
+    "seed": 0,
+    "val_every": 1000,
+    "val_samples": 32,
+    "borders": "real",               // paires comme à l'usage : bords réels + marge complétée (§7.3)
+    "out_dir": "usrnet_training"
+  }
+}

@@ -181,6 +181,24 @@ DRUNet (BENCHMARK.md, REFERENCE_TECHNIQUE.md §7). Tout
 débruiteur d'eoqual-denoising convient (`nl_means`, `bilateral`,
 `nl_bayes`...) ; vérifier sa licence (THIRD_PARTY_LICENSES.md).
 
+**Aller plus loin : apprendre l'algorithme lui-même.** Le Plug-and-Play
+garde un algorithme réglé à la main autour d'un débruiteur appris.
+USRNet (extra `deep`) apprend tout l'algorithme : le même pas en `x` que
+HQS, un débruiteur et les paramètres de chaque itération, entraînés
+ensemble. La PSF et σ restent des **entrées** : un seul réseau sert pour
+tous les flous.
+
+```python
+deconvolve(y, psf, "usrnet", sigma=0.01)               # poids publiés (MIT), téléchargés au premier appel
+deconvolve(y, psf, "usrnet", sigma=0.01, weights="usrnet_training/best.pth")   # poids réentraînés
+```
+
+Sur 24 cas (deux scènes, quatre flous, trois bruits), il gagne 1.3 dB en
+moyenne sur `pnp_hqs` et 2.4 dB sur la TV, en une demi-seconde. Ses poids
+publiés ont été appris sur des photographies ; pour un instrument donné,
+on le **réentraîne** sur ses PSF (`examples/train_usrnet.py`,
+REFERENCE_TECHNIQUE.md §7.3).
+
 ## 7. Données réelles : bords, saturation, pixels manquants, PSF d'instrument
 
 **Bords.** Une image réelle n'est pas périodique : la FFT voit une

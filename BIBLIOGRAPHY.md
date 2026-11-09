@@ -111,6 +111,16 @@ pour écrire les méthodes de ce paquet (voir
   TPAMI* 44(10), 6360-6376, 2021. — calendrier de σ et λ = 0.23 de
   `pnp_hqs`.
 
+## Réseaux dépliés
+
+- K. Zhang, L. Van Gool, R. Timofte, "Deep unfolding network for image
+  super-resolution", *CVPR*, 3217-3226, 2020. — `usrnet` (architecture et
+  poids de KAIR, MIT).
+- N. Zhao, Q. Wei, A. Basarab, N. Dobigeon, D. Kouamé, J.-Y. Tourneret,
+  "Fast single image super-resolution using a new analytical solution for
+  ℓ2–ℓ2 problems", *IEEE TIP* 25(8), 3683-3697, 2016. — solution fermée
+  du module de données (facteur d'échelle s).
+
 ## Déconvolution aveugle
 
 - L. Xu, S. Zheng, J. Jia, "Unnatural L0 sparse representation for

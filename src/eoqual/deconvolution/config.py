@@ -97,6 +97,13 @@ METHODS_CONFIGS: OrderedDict = OrderedDict(
             "restriction": "celle du débruiteur choisi (voir eoqual-denoising list_methods())",
             "reference": "Venkatakrishnan et al. (2013) GlobalSIP ; Chan et al. (2017) IEEE TCI 3(1)",
         },
+        "usrnet": {
+            "family": "apprise (dépliée)",
+            "extra": "deep",
+            "license": "MIT (KAIR, Kai Zhang ; code et poids)",
+            "restriction": "PSF et σ connus ; poids publiés appris sur photographies (réentraînement : deep.training)",
+            "reference": "Zhang, Van Gool & Timofte (2020) CVPR",
+        },
         "blind_l0": {
             "family": "aveugle",
             "extra": None,

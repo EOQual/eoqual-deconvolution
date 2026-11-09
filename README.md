@@ -48,7 +48,7 @@ eoqual-viz, tous sous licence permissive.
 | Extra | Commande | Débloque | Pourquoi optionnel |
 |---|---|---|---|
 | `pnp` | `pip install "eoqual-deconvolution[pnp]"` | `pnp_hqs`, `pnp_admm` avec les débruiteurs du socle d'eoqual-denoising (`nl_ridge`, `nl_bayes`, `tv_chambolle`...) | dépend d'un autre module |
-| `deep` | `pip install "eoqual-deconvolution[deep]"` | Plug-and-Play avec les débruiteurs à réseau d'eoqual-denoising (`drunet`...) | dépendance lourde (PyTorch) ; code et poids DRUNet BSD-3-Clause |
+| `deep` | `pip install "eoqual-deconvolution[deep]"` | Plug-and-Play avec les débruiteurs à réseau d'eoqual-denoising (`drunet`...) ; `usrnet` (réseau déplié) et son réentraînement | dépendance lourde (PyTorch) ; poids DRUNet BSD-3-Clause, poids USRNet MIT (téléchargés à la demande) |
 | `optim` | `pip install "eoqual-deconvolution[optim]"` | `optimize_parameters` (optimisation bayésienne) | scikit-optimize (BSD-3-Clause), inutile pour déconvoluer |
 
 Sans l'extra requis, l'appel de la méthode lève une erreur explicite qui
@@ -125,7 +125,8 @@ Exemples prêts à l'emploi dans `examples/` :
 | `tuning.py` | GCV, discrépance, optimisation avec et sans référence |
 | `blind.py` | déconvolution aveugle d'un flou de bougé |
 | `blind_optics.py` | déconvolution aveugle contrainte par l'optique, PSF variable dans le champ |
-| `blind_optics_benchmark.py`, `wiener_hunt_benchmark.py` | tableaux §6-7 de `BENCHMARK.md` |
+| `blind_optics_benchmark.py`, `wiener_hunt_benchmark.py`, `usrnet_benchmark.py` | tableaux §6-8 de `BENCHMARK.md` |
+| `train_usrnet.py` (+ `train_usrnet.jsonc`) | réentraînement d'USRNet sur des PSF d'instrument |
 | `figures.py` | schémas PNG de la référence technique |
 | `benchmark.py` | tableaux de `BENCHMARK.md` |
 
@@ -146,12 +147,14 @@ Exemples prêts à l'emploi dans `examples/` :
 | `tv_primal_dual` | variationnelle | variation totale, primal-dual de Condat-Vũ | — |
 | `pnp_hqs` | Plug-and-Play | éclatement semi-quadratique, débruiteur eoqual-denoising | `pnp` / `deep` |
 | `pnp_admm` | Plug-and-Play | ADMM, débruiteur eoqual-denoising | `pnp` / `deep` |
+| `usrnet` | apprise (dépliée) | USRNet : HQS déplié, PSF et σ en entrée, poids publiés (MIT) ou réentraînés sur des PSF d'instrument | `deep` |
 | `blind_l0` | aveugle | a priori L0 sur les gradients, multi-échelle (expérimental) | — |
 | `blind_optics` | aveugle | PSF contrainte par le modèle optique de l'instrument (diffraction, aberrations de Zernike bornées, jitter), variation dans le champ par tuiles | — |
 
 Toutes les méthodes sont des implémentations originales sous MIT, écrites
 à partir des publications citées (sauf `wiener_unsupervised`, qui appelle
-scikit-image).
+scikit-image, et `usrnet`, dont l'architecture reprend celle de KAIR, MIT,
+pour charger ses poids : THIRD_PARTY_LICENSES.md §3.2).
 
 Résultats indicatifs (PSNR, image d'évaluation 512×256, bruit 0.01,
 réglages par défaut ; détail dans [BENCHMARK.md](BENCHMARK.md)) :

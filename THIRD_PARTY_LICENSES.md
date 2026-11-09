@@ -42,7 +42,7 @@ scikit-image.
 | Extra | Paquets | Licence | Remarque |
 |---|---|---|---|
 | `pnp` | eoqual-denoising | MIT | 🟢 avec les débruiteurs du socle d'eoqual-denoising |
-| `deep` | eoqual-denoising, torch, deepinv, einops | BSD-3-Clause / MIT | 🟢 code et poids DRUNet (BSD-3-Clause) |
+| `deep` | eoqual-denoising, torch, deepinv, einops | BSD-3-Clause / MIT | 🟢 code et poids DRUNet (BSD-3-Clause) ; `usrnet` : architecture reprise de KAIR et poids `usrnet.pth`, `usrnet_tiny.pth` (MIT, © 2019 Kai Zhang), téléchargés à la demande et vérifiés par SHA-256 (§3.2) |
 | `optim` | scikit-optimize | BSD-3-Clause |
 | cvxpy (développement seulement, test de référence) | Apache-2.0 | 🟢 |
 
@@ -83,14 +83,32 @@ tiers. Le filtre de Wiener-Tikhonov et ses critères GCV et L-curve
 reprennent la formulation d'un prototype personnel de l'auteur, publié
 ici sous MIT.
 
+### 3.2 Exception : USRNet (code repris de KAIR, MIT)
+
+`deep/usrnet.py` reprend la structure et les noms de paramètres du réseau
+USRNet de KAIR (`models/network_usrnet.py`, `models/basicblock.py`,
+© 2019 Kai Zhang, **licence MIT**, https://github.com/cszn/KAIR), afin
+de charger les poids publiés par l'auteur (`usrnet.pth`,
+`usrnet_tiny.pth`, publication v1.0 de KAIR, MIT). C'est la seule
+exception à la règle « écrit depuis les seules publications » : le code
+a été consulté et adapté (API FFT complexe actuelle de PyTorch au lieu de
+`torch.rfft`, supprimée ; branchement sur les bords, l'échelle et le
+registre du paquet ; boucle d'inférence réécrite), la notice de licence
+est citée en tête du module, et la licence MIT de KAIR est compatible avec
+celle du paquet. Les poids ne sont pas redistribués : ils sont téléchargés
+depuis la publication de KAIR et vérifiés par empreinte
+(`deep/weights.py`). Les outils d'entraînement (`deep/training.py`) sont
+écrits pour ce paquet, depuis l'article et le protocole décrit dans
+REFERENCE_TECHNIQUE.md §7.3.
+
 ### 3.1 Méthodes étudiées, non reprises (vérifié le 2026-11-08)
 
 | Méthode | Code et poids publiés | Licence | Statut |
 |---|---|---|---|
-| DWDN (Dong, Roth & Schiele, NeurIPS 2020) | GitHub `dongjxjx/dwdn` et GitLab du MPI, poids `model_DWDN.pt` | **aucune** (tous droits réservés) | 🔴 ni code ni poids réutilisables ; réimplémentation propre depuis l'article envisagée (REFERENCE_TECHNIQUE.md §12) |
-| Deep-Blur (Debarnot & Weiss, *Biological Imaging* 2024) | GitHub `pierre-weiss/deepblur` (architecture, générateur de PSF, démo) ; poids sur Hugging Face `pweiss/DeepBlur` ; entraînement non publié | code des auteurs **CC0 1.0** ; fichiers tiers embarqués : `basicblock.py`, `network_unet.py` (KAIR, MIT ; d'après BasicSR, Apache-2.0), `didn_class.py` (sigmanet, Imperial College, MIT), `common.py`, `DownSampler.py` (Deep Image Prior, Apache-2.0, l'auteur demande à être contacté pour un usage commercial) ; **poids CC BY-NC 4.0** | 🟡 code réutilisable (CC0 ; notices des fichiers tiers à conserver, exception au §3 à documenter si repris) ; 🔴 poids non commerciaux, non reprenables ; estimateur appris envisagé (REFERENCE_TECHNIQUE.md §12). Pas de version DeepInv à ce jour (vérifié le 2026-11-08, DeepInv `e34c06f`) : ni réseau d'identification par Zernike, ni poids, ni code d'entraînement |
+| DWDN (Dong, Roth & Schiele, NeurIPS 2020) | GitHub `dongjxjx/dwdn` et GitLab du MPI, poids `model_DWDN.pt` | **aucune** (tous droits réservés) | 🔴 ni code ni poids réutilisables ; réimplémentation propre depuis l'article envisagée (REFERENCE_TECHNIQUE.md §12.2.4) |
+| Deep-Blur (Debarnot & Weiss, *Biological Imaging* 2024) | GitHub `pierre-weiss/deepblur` (architecture, générateur de PSF, démo) ; poids sur Hugging Face `pweiss/DeepBlur` ; entraînement non publié | code des auteurs **CC0 1.0** ; fichiers tiers embarqués : `basicblock.py`, `network_unet.py` (KAIR, MIT ; d'après BasicSR, Apache-2.0), `didn_class.py` (sigmanet, Imperial College, MIT), `common.py`, `DownSampler.py` (Deep Image Prior, Apache-2.0, l'auteur demande à être contacté pour un usage commercial) ; **poids CC BY-NC 4.0** | 🟡 code réutilisable (CC0 ; notices des fichiers tiers à conserver, exception au §3 à documenter si repris) ; 🔴 poids non commerciaux, non reprenables ; estimateur appris envisagé (REFERENCE_TECHNIQUE.md §12.2.5). Pas de version DeepInv à ce jour (vérifié le 2026-11-08, DeepInv `e34c06f`) : ni réseau d'identification par Zernike, ni poids, ni code d'entraînement |
 | `deepinv.models.KernelIdentificationNetwork` (Carbajal et al. 2023, J-MKPD) | dans DeepInv ; poids Hugging Face `deepinv/kernel_identification` | code DeepInv BSD-3-Clause (« adapté avec la permission de l'auteur », dépôt d'origine `GuillermoCarbajal/J-MKPD` sans licence) ; poids BSD-3-Clause | 🟢 utilisable via l'extra `deep` ; autre méthode que Deep-Blur (noyaux libres et poids variables, flou de bougé), non évaluée pour l'observation de la Terre |
-| ErA (Vo & Park, NeurIPS 2025 COML) | aucun | article CC BY 4.0 | 🟡 réimplémentation propre possible mais article incomplet ; idées transposables sans apprentissage (REFERENCE_TECHNIQUE.md §12) |
+| ErA (Vo & Park, NeurIPS 2025 COML) | aucun | article CC BY 4.0 | 🟡 réimplémentation propre possible mais article incomplet ; idées transposables sans apprentissage (REFERENCE_TECHNIQUE.md §12.2.6) |
 
 ## 4. Images
 

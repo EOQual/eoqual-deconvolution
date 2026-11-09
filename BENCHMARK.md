@@ -215,3 +215,47 @@ critère `evidence`.
 | défoc. + coma | urbain | 0.01 | 27.11 | 24.67 | 25.56 | 25.29 | 26.37 | defocus 0.00, coma_x 0.10, coma_y 0.10 | 4 s |
 | défoc. + coma | parc | 0.003 | 30.61 | 26.23 | 27.28 | 29.91 | 28.38 | defocus 0.19, coma_x 0.08, coma_y -0.04 | 6 s |
 | défoc. + coma | parc | 0.01 | 27.86 | 25.74 | 26.44 | 26.24 | 26.84 | defocus 0.00, coma_x 0.09, coma_y 0.10 | 5 s |
+
+## 8. USRNet (0.5.0) — PSNR (dB), PSF connue, poids publiés
+
+`python examples/usrnet_benchmark.py IMAGE.tif` (REFERENCE_TECHNIQUE.md
+§7.2) : scènes 256 × 256 (« astronaut » ; orthophotographie de Toulouse
+Métropole, Licence Ouverte 2.0, réduite d'un facteur 2), flous du §6, bruit
+blanc gaussien, graine 0, bords réels (flou simulé avec prolongement
+miroir) ; `usrnet` avec `boundary="unknown"` (défaut). `pnp_hqs` avec son
+débruiteur par défaut (NL-Ridge). Temps : `usrnet` sur GPU Apple (MPS).
+Second tableau : restauration avec une PSF fausse.
+
+| scène | flou | σ | observée | wiener_hunt | tv | pnp_hqs | usrnet[usrnet] | usrnet_tiny | temps usrnet |
+|---|---|---|---|---|---|---|---|---|---|
+| astronaut | gauss1.6 | 0.003 | 25.90 | 30.42 | 30.77 | 31.74 | 33.20 | 31.41 | 2.0 s |
+| astronaut | gauss1.6 | 0.01 | 25.76 | 28.81 | 29.55 | 30.34 | 31.54 | 29.70 | 0.5 s |
+| astronaut | gauss1.6 | 0.03 | 24.63 | 27.00 | 27.64 | 28.54 | 29.62 | 26.89 | 0.4 s |
+| astronaut | airy | 0.003 | 29.09 | 35.38 | 36.70 | 37.65 | 38.86 | 36.62 | 1.4 s |
+| astronaut | airy | 0.01 | 28.79 | 32.40 | 33.42 | 35.12 | 36.10 | 32.20 | 0.4 s |
+| astronaut | airy | 0.03 | 26.74 | 29.21 | 29.01 | 31.84 | 32.77 | 24.96 | 0.8 s |
+| astronaut | bougé | 0.003 | 24.36 | 29.89 | 32.52 | 26.25 | 36.65 | 31.22 | 0.7 s |
+| astronaut | bougé | 0.01 | 24.27 | 28.36 | 29.95 | 30.78 | 32.92 | 24.95 | 0.4 s |
+| astronaut | bougé | 0.03 | 23.44 | 26.17 | 26.71 | 28.17 | 29.43 | 16.85 | 0.4 s |
+| astronaut | optique | 0.003 | 27.83 | 36.14 | 38.26 | 38.87 | 40.16 | 36.26 | 0.4 s |
+| astronaut | optique | 0.01 | 27.61 | 31.34 | 32.75 | 33.14 | 35.78 | 27.82 | 0.5 s |
+| astronaut | optique | 0.03 | 25.97 | 28.27 | 27.81 | 30.78 | 31.84 | 18.95 | 0.7 s |
+| toulouse | gauss1.6 | 0.003 | 27.80 | 30.69 | 30.36 | 31.37 | 31.62 | 30.39 | 0.7 s |
+| toulouse | gauss1.6 | 0.01 | 27.58 | 29.47 | 29.47 | 30.12 | 30.52 | 30.04 | 0.6 s |
+| toulouse | gauss1.6 | 0.03 | 25.95 | 28.18 | 28.22 | 28.88 | 29.50 | 28.44 | 0.6 s |
+| toulouse | airy | 0.003 | 30.43 | 35.00 | 34.17 | 38.32 | 38.22 | 34.56 | 0.7 s |
+| toulouse | airy | 0.01 | 30.02 | 31.92 | 31.88 | 34.64 | 33.62 | 31.53 | 0.7 s |
+| toulouse | airy | 0.03 | 27.47 | 29.52 | 28.76 | 30.63 | 30.86 | 24.08 | 0.6 s |
+| toulouse | bougé | 0.003 | 28.39 | 31.97 | 31.95 | 30.99 | 34.67 | 30.11 | 0.7 s |
+| toulouse | bougé | 0.01 | 28.13 | 29.89 | 30.28 | 31.24 | 31.27 | 26.19 | 0.4 s |
+| toulouse | bougé | 0.03 | 26.32 | 28.39 | 28.08 | 29.38 | 29.73 | 17.00 | 0.7 s |
+| toulouse | optique | 0.003 | 29.58 | 36.64 | 36.62 | 37.88 | 38.93 | 35.49 | 0.4 s |
+| toulouse | optique | 0.01 | 29.23 | 31.38 | 31.75 | 33.48 | 34.18 | 28.44 | 0.4 s |
+| toulouse | optique | 0.03 | 27.01 | 28.93 | 28.01 | 30.63 | 30.36 | 19.09 | 0.5 s |
+
+| scène | PSF (vraie → utilisée) | σ | wiener_hunt | tv | pnp_hqs | usrnet[usrnet] | usrnet_tiny |
+|---|---|---|---|---|---|---|---|
+| astronaut | gauss 1.6 → 1.8 | 0.01 | 28.13 | 28.89 | 29.20 | 28.95 | 26.31 |
+| astronaut | défoc. 0.15 → 0.10 | 0.01 | 30.39 | 31.14 | 32.13 | 32.42 | 30.01 |
+| toulouse | gauss 1.6 → 1.8 | 0.01 | 29.13 | 29.11 | 29.67 | 29.54 | 28.81 |
+| toulouse | défoc. 0.15 → 0.10 | 0.01 | 30.85 | 31.24 | 32.83 | 32.63 | 30.71 |

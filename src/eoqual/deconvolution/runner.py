@@ -32,6 +32,7 @@ _DISPATCH = {
     "tv_primal_dual": "eoqual.deconvolution.backends.sparse:tv_primal_dual_deconvolve",
     "pnp_hqs": "eoqual.deconvolution.backends.pnp:pnp_hqs_deconvolve",
     "pnp_admm": "eoqual.deconvolution.backends.pnp:pnp_admm_deconvolve",
+    "usrnet": "eoqual.deconvolution.deep.usrnet:usrnet_deconvolve",
     "blind_l0": "eoqual.deconvolution.backends.blind:blind_l0_deconvolve",
     "blind_optics": "eoqual.deconvolution.backends.optics_blind:blind_optics_deconvolve",
 }

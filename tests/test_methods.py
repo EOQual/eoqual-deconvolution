@@ -35,6 +35,8 @@ def test_registry_consistent():
 
 @pytest.mark.parametrize("method", list(METHODS_CONFIGS))
 def test_unified_signature(method):
+    if METHODS_CONFIGS[method]["extra"] == "deep":
+        pytest.importorskip("torch")
     params = inspect.signature(get_method(method)).parameters
     names = list(params)
     assert names[:3] == ["image", "psf", "sigma"]

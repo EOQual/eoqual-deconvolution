@@ -6,6 +6,46 @@ dans `REFERENCE_TECHNIQUE.md`, annexe A.
 
 ## Version History
 
+0.5.0 (2026-11-08)
+
+:   -   `usrnet` (nouvelle méthode, extra `deep`) : USRNet (Zhang, Van Gool
+        & Timofte 2020), HQS déplié dont le débruiteur et les paramètres
+        de chaque itération sont appris ; **PSF et σ en entrée**. Poids
+        publiés de KAIR (`usrnet`, `usrnet_tiny`, MIT) téléchargés à la
+        demande et vérifiés par SHA-256 (`deep/weights.py`) ; architecture
+        reprise de KAIR (MIT) pour les charger, réécrite pour l'API FFT
+        actuelle de PyTorch (THIRD_PARTY_LICENSES.md §3.2). CUDA, GPU Apple
+        (MPS) ou CPU.
+    -   Bords : `boundary="unknown"` (défaut) complète la marge, et les
+        pixels masqués ou saturés, **avant** le réseau par le flou d'une
+        restauration de Wiener–Hunt à marge inconnue — le réseau, entraîné
+        en flou circulaire, exige un domaine cohérent avec la PSF. Bougé :
+        16.8 dB (miroir) → 36.7 dB ; compléter à chaque itération diverge
+        (REFERENCE_TECHNIQUE.md §7.2).
+    -   Résultats (24 cas, poids publiés) : 33.4 dB en moyenne, contre
+        32.1 (`pnp_hqs`), 31.0 (TV), 30.6 (`wiener_hunt`) ; au-dessus de
+        la TV dans tous les cas (BENCHMARK.md §8).
+    -   **Réentraînement** (`deep/training.py`) : lois des PSF d'instrument
+        (`PSFSampler` : modèle optique, gaussiennes, filés) et du bruit
+        (`NoiseSampler` : gaussien ou poisson-gaussien), paires à la volée,
+        boucle d'entraînement reproductible, validation sur images
+        disjointes, points de contrôle avec architecture et empreinte ;
+        `examples/train_usrnet.py` et `train_usrnet.jsonc` ; protocole en
+        huit étapes (REFERENCE_TECHNIQUE.md §7.3). Paires à bords réels
+        par défaut (`borders="real"` : zone floutée puis recadrée, marge
+        complétée par Wiener–Hunt comme à l'inférence). Démonstration sur
+        orthophotographie, 24 vignettes à bords réels : +0.44 dB en
+        moyenne (jusqu'à +3.4 dB là où les poids publiés étaient faibles),
+        23 cas améliorés sur 24, aucune perte au-delà de 0.11 dB (0.39 dB
+        avec des paires en flou circulaire) ; plateau après ~3 500
+        itérations.
+    -   `REFERENCE_TECHNIQUE.md` : §7 « Plug-and-Play et réseaux dépliés »
+        (7.1 Plug-and-Play, 7.2 `usrnet`, 7.3 réentraînement) ; §12 séparé
+        en 12.1 méthodes classiques et 12.2 méthodes apprises, avec un
+        **panorama des solutions neuronales** (licence, publication, code
+        d'entraînement, poids) : recommandées, utilisables, écartées.
+    -   Exemple `usrnet_benchmark.py`, BENCHMARK.md §8, tutoriel §6.
+
 0.4.3 (2026-11-08)
 
 :   -   Documentation seulement, aucun changement de code ni de résultat.

@@ -12,7 +12,7 @@ références complètes dans [BIBLIOGRAPHY.md](BIBLIOGRAPHY.md).
 4. [Méthodes itératives](#4-méthodes-itératives)
 5. [Choix du paramètre des méthodes linéaires](#5-choix-du-paramètre-des-méthodes-linéaires)
 6. [Méthodes variationnelles](#6-méthodes-variationnelles)
-7. [Plug-and-Play](#7-plug-and-play)
+7. [Plug-and-Play et réseaux dépliés](#7-plug-and-play-et-réseaux-dépliés)
 8. [Déconvolution aveugle](#8-déconvolution-aveugle)
 9. [Optimisation des paramètres](#9-optimisation-des-paramètres)
 10. [PSF, simulation, figures](#10-psf-simulation-figures)
@@ -417,7 +417,9 @@ fonctionnelle atteinte égale celle de CVXPY (solveur Clarabel) à 1e-6
 près, et la solution en diffère de moins de 5e-3
 (``tests/test_reference_cvxpy.py``, Diamond & Boyd 2016).
 
-## 7. Plug-and-Play
+## 7. Plug-and-Play et réseaux dépliés
+
+### 7.1 Plug-and-Play (``pnp_hqs``, ``pnp_admm``)
 
 ``backends/pnp.py``. Problème ``½‖Hx − y‖²/σ² + λΦ(x)``, l'a priori
 ``Φ`` n'étant connu qu'à travers un débruiteur ``D(·, σ_k)``.
@@ -459,6 +461,217 @@ près, et la solution en diffère de moins de 5e-3
   partir de la moitié des itérations ne sauve pas le bougé (25 dB) : il
   est donc fait dès la 2ᵉ itération ; ``fill_boundary=False`` le
   désactive.
+
+### 7.2 `usrnet` — réseau déplié (extra ``deep``)
+
+``deep/usrnet.py``. USRNet (Zhang, Van Gool & Timofte, CVPR 2020) **déplie**
+l'algorithme HQS du §7.1 sur un nombre fixe d'itérations (8, ou 6 pour
+le modèle réduit) et en **apprend** les ingrédients de bout en bout, au
+lieu de les régler :
+
+- **module de données**, sans paramètre appris : la solution exacte du
+  pas en ``x`` de HQS, ``Z = (H* Y + α_k X)/(|H|² + α_k)`` pour un facteur
+  d'échelle 1 (Zhao et al. 2016 pour le cas général de super-résolution)
+  — le même que le pas en ``x`` de ``pnp_hqs`` ;
+- **module d'a priori** : un débruiteur ResUNet conditionné par β_k (carte
+  constante concaténée à l'image), qui joue le rôle du débruiteur du
+  Plug-and-Play ;
+- **module d'hyperparamètres** : un petit réseau qui donne ``(α_k, β_k)``
+  pour chaque itération à partir de ``(σ, s)`` — l'équivalent appris du
+  calendrier et du λ de ``pnp_hqs``.
+
+La **PSF et σ sont des entrées** : le réseau n'apprend pas un flou, il
+apprend à inverser n'importe quel flou fourni. C'est ce qui le rend
+adaptable à un instrument (PSF mesurée ou estimée par ``blind_optics``)
+et réentraînable (§7.3).
+
+**Implémentation.** Structure et noms de paramètres de KAIR (MIT, © 2019
+Kai Zhang) pour charger les poids publiés, réécrits pour l'API FFT
+complexe actuelle de PyTorch (``torch.rfft`` a été supprimée) ; exception
+documentée dans THIRD_PARTY_LICENSES.md §3.2. Poids ``"usrnet"`` (17.0 M
+de paramètres) et ``"usrnet_tiny"`` (0.59 M), téléchargés à la demande
+depuis la publication v1.0 de KAIR et vérifiés par SHA-256
+(``deep/weights.py`` ; cache ``$EOQUAL_WEIGHTS_DIR`` ou
+``~/.cache/eoqual/deconvolution``). Vérifications : chargement strict des
+poids, module de données égal à la formule fermée à 2·10⁻¹⁵ près, OTF
+égale à ``eoqual.core.kernel.psf2otf``. Le réseau, en couleur, reçoit
+l'image répliquée sur trois canaux ; la sortie est leur moyenne. L'image
+est ramenée à [0, 1] ; σ est exprimé dans ces unités (poids publiés : σ
+de 0 à 25/255). Calcul sur CUDA, GPU Apple (MPS) ou CPU : ~0.4 s pour
+256 × 256 avec le modèle complet.
+
+**Bords : la leçon des réseaux dépliés.** Le réseau a été entraîné en flou
+**circulaire** : son module de données suppose que l'image de travail
+entière est une image floue par la PSF. Trois traitements ont été essayés
+(scène « astronaut », bougé de 9 px, σ = 0.003) :
+
+| Traitement de la marge | PSNR | Remarque |
+|---|---|---|
+| prolongement miroir (``boundary="reflect"``) | 16.8 dB | le miroir d'une image floue n'est pas l'image floue du miroir pour une PSF asymétrique : défaut amplifié aux zéros de la FTM |
+| marge complétée **à chaque itération** par le flou de l'estimée (comme ``pnp_hqs``, §7.1) | diverge | les estimées intermédiaires d'un réseau déplié ne sont pas des images (12 à 18 dB, valeurs jusqu'à 119) : la marge se nourrit d'elles et explose |
+| marge complétée **une fois, avant le réseau**, par le flou d'une restauration de Wiener–Hunt à marge inconnue (``boundary="unknown"``, défaut) | **36.7 dB** | domaine entier cohérent avec la PSF ; inchangé (±0.1 dB) sur les flous symétriques |
+| (référence : flou simulé périodique) | 37.4 dB | |
+
+La même complétion préalable traite les **pixels masqués et saturés**
+(§2.2) : une ligne sur 16 masquée est reconstruite (test). Le Plug-and-Play
+supporte le remplissage itératif parce que son débruiteur renvoie à chaque
+pas une image plausible ; un réseau déplié n'offre pas cette garantie.
+
+**Résultats** (``examples/usrnet_benchmark.py``, BENCHMARK.md §8 ;
+poids publiés, PSF connue) :
+
+Moyenne du PSNR (dB) sur deux scènes 256 × 256 (« astronaut » et un
+extrait d'orthophotographie) et trois bruits (σ = 0.003, 0.01, 0.03) ;
+``pnp_hqs`` avec son débruiteur par défaut (NL-Ridge) :
+
+| Flou | ``wiener_hunt`` | ``tv_primal_dual`` | ``pnp_hqs`` | **``usrnet``** | ``usrnet_tiny`` |
+|---|---|---|---|---|---|
+| gaussien σ = 1.6 px | 29.10 | 29.34 | 30.17 | **31.00** | 29.48 |
+| Airy (anneau à 2.5 px) | 32.24 | 32.32 | 34.70 | **35.07** | 30.66 |
+| bougé 9 px | 29.11 | 29.92 | 29.47 | **32.44** | 24.39 |
+| optique (Q = 1, défoc. 0.15, jitter 0.3) | 32.12 | 32.53 | 34.13 | **35.21** | 27.68 |
+| **moyenne des 24 cas** | 30.64 | 31.03 | 32.12 | **33.43** | 28.05 |
+
+USRNet dépasse la TV dans les 24 cas (+1.0 à +4.1 dB) et ``pnp_hqs`` dans
+21 (de −1.0 dB, Airy sur l'orthophotographie, à +10 dB, bougé à faible
+bruit), en ~0.5 s. Avec une PSF fausse (σ gaussien 1.6 → 1.8 ;
+défocalisation 0.15 → 0.10 onde RMS), il reste au niveau de ``pnp_hqs``
+(−0.3 à +0.3 dB) et au-dessus de la TV.
+
+**Limites.**
+
+- Poids publiés appris sur des **photographies**, avec des noyaux
+  gaussiens et de bougé (25 × 25) et σ ≤ 25/255 : rien ne garantit leur
+  comportement sur d'autres PSF, d'autres statistiques de scène ou un
+  bruit poisson-gaussien — d'où le réentraînement (§7.3).
+- Le modèle réduit ``usrnet_tiny`` s'effondre à fort bruit sur les PSF à
+  FTM étalée (Airy, optique : 19 dB à σ = 0.03, sous l'image observée) :
+  le réserver aux bruits faibles, ou le réentraîner.
+- Comme toute méthode apprise, le réseau peut **inventer** des détails
+  plausibles : vérifier l'écart à la vérité par bande de fréquence
+  au-delà de la coupure de la MTF avant tout usage quantitatif.
+- La PSF doit être juste : sensibilité à une PSF fausse au
+  BENCHMARK.md §8 ; avec une PSF estimée, enchaîner ``blind_optics``
+  (estimation) puis ``usrnet`` (restauration, ``restore="usrnet"``).
+- Super-résolution (s > 1) non exposée : la priorité est la
+  déconvolution ; le module de données la gère déjà (Zhao et al. 2016).
+
+### 7.3 Réentraînement : protocole et outils
+
+Les poids publiés ne connaissent ni les PSF d'un instrument d'observation
+de la Terre (diffraction d'une pupille obturée à Q ≈ 1, aberrations,
+jitter, filé) ni ses scènes ni son bruit. Comme la PSF est une entrée du
+réseau, il suffit de lui **montrer la bonne famille de flous** : réglage
+fin depuis les poids publiés, ou entraînement complet.
+
+**Outils** (``deep/training.py``, extra ``deep``) :
+
+| Outil | Rôle |
+|---|---|
+| ``PSFSampler`` | loi des PSF : modèle optique (``optical_psf`` : Q, obturation, aberrations de Zernike, jitter, dans des plages), gaussiennes, filés ; probabilités par famille |
+| ``NoiseSampler`` | bruit gaussien ou poisson-gaussien (``σ² = a + b·L``), niveau tiré dans une plage, part sans bruit |
+| ``load_training_images`` | images nettes en niveaux de gris dans [0, 1] ; linéarisation (``gamma``) et réduction (``reduce``) |
+| ``PatchSampler`` | paires à la volée : vignette au hasard, retournement et rotation, PSF tirée, bruit ; ``borders="real"`` (défaut) : zone plus grande floutée puis recadrée, bruit, marge complétée par Wiener–Hunt **comme à l'inférence** (§7.2) ; ``borders="circular"`` : flou circulaire (cadre exact du module de données, plus rapide) |
+| ``TrainingConfig`` | poids de départ (``"usrnet"``, ``"usrnet_tiny"``, un fichier, ou aucun avec ``arch``), itérations, lot, vignette, taux et paliers, perte L1, graine, appareil, validation |
+| ``train_usrnet`` | boucle Adam, validation périodique sur des images **disjointes**, sauvegarde du meilleur point de contrôle |
+| ``evaluate_usrnet`` | PSNR moyen sur des paires de validation à tirage fixe |
+| ``examples/train_usrnet.py`` + ``train_usrnet.jsonc`` | tout le protocole en ligne de commande, configuration commentée ; évaluation finale contre ``wiener_hunt`` et les poids de départ |
+
+Produits : ``best.pth`` et ``last.pth`` (poids, architecture, réglages,
+historique ; ``deconvolve(..., "usrnet", weights="…/best.pth")`` les
+charge directement), ``history.csv``, ``config.json``, ``best.sha256``,
+``evaluation.json``.
+
+**Protocole.**
+
+1. **Décrire l'instrument** : plages de Q (longueurs d'onde extrêmes de
+   la bande), obturation et pupille, plages plausibles des aberrations
+   (budget de front d'onde, dérives thermiques), jitter (spécification du
+   contrôle d'attitude), filé résiduel (TDI), modèle de bruit (PTC,
+   eoqual-measure : ``a`` et ``b``). Ce sont les plages de
+   ``PSFSampler`` et ``NoiseSampler`` ; les élargir un peu au-delà du
+   nominal rend le réseau robuste à une PSF mal connue.
+2. **Choisir les images nettes** : licence claire (Licence Ouverte 2.0,
+   CC BY…), registre des sources ; linéariser (le flou s'applique à la
+   luminance linéaire) ; réduire (moyenne 2 × 2 ou plus) pour des
+   vignettes nettes à l'échelle du pixel, sans flou propre (§8.2.5) ;
+   varier les paysages (urbain, agricole, forêt, eau, relief).
+3. **Séparer** entraînement et validation par **zones géographiques
+   disjointes** (pas seulement des vignettes différentes) ; garder une
+   troisième zone, jamais vue, pour l'évaluation finale.
+4. **Point de départ** : réglage fin depuis ``"usrnet"`` (taux 5·10⁻⁵,
+   quelques 10³ à 10⁴ itérations ; sur GPU Apple, lot de 8 : ~2 s par
+   itération à bords réels, ~1 s en flou circulaire) ; entraînement complet (``init_weights=None``,
+   taux 10⁻⁴, ~4·10⁵ itérations comme KAIR, GPU dédié) seulement si le
+   domaine est très éloigné.
+5. **Suivre** le PSNR de validation (``history.csv``) ; garder le meilleur
+   point de contrôle ; arrêter quand il plafonne.
+6. **Évaluer** sur la zone réservée, à PSF tirées de la même loi **et**
+   hors de ses plages : face à ``wiener_hunt``, ``tv_primal_dual``, aux
+   poids de départ ; avec une PSF fausse (défocalisation mal estimée) ;
+   écart à la vérité par bande de fréquence (détails inventés).
+7. **Publier** les poids sous une licence explicite (MIT ou CC BY 4.0),
+   avec leur empreinte SHA-256, la configuration, les versions (paquet,
+   PyTorch) et le registre des images ; ne jamais les inclure dans le
+   paquet pip.
+8. **Reproductibilité** : graine fixée, configuration versionnée ; le
+   tirage des paires est déterministe pour une graine donnée, au
+   non-déterminisme près des noyaux GPU.
+
+**Démonstration** (orthophotographie de Toulouse, Licence Ouverte 2.0,
+réduite d'un facteur 2 ; entraînement sur les trois quarts nord,
+validation sur le quart sud ; configuration ``train_usrnet.jsonc``,
+lot de 8 vignettes 96 × 96). Deux réglages fins depuis les poids
+publiés, évalués sur les **mêmes** 24 vignettes 256 × 256 du quart sud,
+à bords réels (``boundary="unknown"``), PSF tirées de la loi, σ de
+0.004 à 0.039 :
+
+| Mesure | Poids publiés | Flou circulaire, 2 000 itérations | Bords réels, 6 000 itérations |
+|---|---|---|---|
+| PSNR moyen (évaluation finale) | 31.89 dB | 32.33 dB (+0.44) | **32.33 dB (+0.44)** |
+| gain médian | | +0.23 dB | +0.24 dB |
+| gain, plage selon le cas | | −0.39 à +3.32 dB | **−0.11** à +3.43 dB |
+| cas améliorés | | 21 / 24 | **23 / 24** |
+| PSNR de validation pendant l'entraînement (paires du réglage, non comparables entre colonnes) | 34.53 / 29.74 dB | 36.60 dB | 30.76 dB |
+
+Référence sur les mêmes vignettes : observée 27.09 dB, ``wiener_hunt``
+29.78 dB.
+
+Lecture :
+
+- **le réglage fin apporte +0.4 dB en moyenne**, concentré là où les
+  poids publiés étaient faibles : cas où le départ ne dépassait
+  ``wiener_hunt`` que d'un décibel au plus, voire lui était inférieur,
+  surtout à fort bruit (σ > 0.03) — gains de +0.3 à +3.4 dB, +1.4 en
+  moyenne ; ailleurs, de −0.1 à +0.6 dB. Les poids
+  publiés étaient déjà bons sur ces PSF (31.9 dB contre 29.8 pour
+  ``wiener_hunt``) ;
+- **les bords réels ne relèvent pas la moyenne mais suppriment les
+  pertes** : le réseau voit à l'entraînement la marge complétée par
+  Wiener–Hunt qu'il rencontre à l'usage (§7.2), si bien qu'aucun cas ne
+  se dégrade de plus de 0.11 dB (contre 0.39 dB en flou circulaire).
+  C'est le réglage par défaut (``borders="real"``) ;
+- **le PSNR de validation de** ``history.csv`` **ne se compare pas d'un
+  réglage à l'autre** : en flou circulaire, il est mesuré dans le cadre
+  exact du module de données et surestime le gain (+2.1 dB contre +0.44
+  à l'usage) ; à bords réels, il suit fidèlement l'évaluation finale
+  (+1.0 dB sur des vignettes plus petites, où la marge pèse plus).
+  Toujours juger un réentraînement sur l'évaluation finale
+  (``evaluation.json``) ;
+- **plateau** : le PSNR de validation progresse surtout pendant les
+  1 000 premières itérations (+0.8 dB), puis de 0.2 dB jusqu'à 3 500 et
+  plus du tout ensuite (30.73 à 30.76 dB) ; les deux divisions du taux
+  par 2 (paliers à 50 et 75 %) restent sans effet. Au-delà, le gain est à chercher
+  dans des **données** plus variées (plusieurs scènes et paysages,
+  §7.3 étape 2), pas dans des itérations.
+
+Coût : la complétion de marge double le temps d'une itération (~2 s
+contre ~1 s sur GPU Apple, lot de 8) ; 6 000 itérations font environ
+3 h 30 de calcul.
+
+*Suite* : un apprentissage **auto-supervisé** (pertes de DeepInv :
+imagerie équivariante, SURE, R2R) permettrait d'adapter le réseau à des
+images réelles d'un capteur sans images nettes de référence (§12.2.1).
 
 ## 8. Déconvolution aveugle
 
@@ -900,7 +1113,7 @@ Conséquences :
   petit filé, au même titre qu'une petite défocalisation (§8.2.5) ; un
   jitter estimé nettement plus grand que celui attendu de la plateforme
   doit faire soupçonner un filé (ou un flou de la scène). Le filé n'est
-  pas un paramètre de ``blind_optics`` en 0.4.0 (§12) ;
+  pas un paramètre de ``blind_optics`` en 0.4.0 (§12.1) ;
 - **imageur à balayage (push-broom)** : pendant le temps de ligne, la
   scène défile d'un pixel dans le sens de la trace ; ce défilement
   nominal est un filé de longueur ``L = 1`` px (FTM ``sinc(π f)`` le long
@@ -921,12 +1134,109 @@ connus).
 | ``test_reference_cvxpy.py`` | TV primal-duale = optimum calculé par CVXPY (sauté sans CVXPY) |
 | ``test_methods.py`` | contrat d'appel, gain minimal par méthode, PSF Dirac, invariance d'échelle, bords, bandes, cas d'erreur, propriétés (Wiener = Tikhonov identité, accélération RL, arrêt de Landweber, décroissance TV) |
 | ``test_tuning.py`` | GCV proche de l'oracle, discrépance, L-curve, espaces de recherche, optimisation (avec et sans référence) |
+| ``test_usrnet.py`` | OTF = ``psf2otf``, module de données = formule fermée de Wiener–Tikhonov, lois de tirage, entraînement depuis zéro et rechargement ; avec les poids publiés (marqueur ``deep``) : nombre de paramètres, gain sur Tikhonov, marge inconnue sur bougé (> miroir + 10 dB, > TV), lignes masquées |
 | ``test_pnp.py`` | débruiteur fourni, ``tv_chambolle``, ``nl_ridge`` ; ``drunet`` (marqueur ``deep``) |
 | ``test_blind.py`` | PSF estimée plus proche de la vraie que le Dirac, gain positif |
 | ``test_optics.py`` | ``optical_psf`` = Airy analytique, FTM sous la diffraction, symétrie ``φ → −φ``, défocalisation physique, bande spectrale ; Wiener–Hunt (σ estimé, égal à Tikhonov à λ imposé, critère profilé) ; ``blind_optics`` (validation du modèle, défocalisation retrouvée, tuiles, modèles de champ) |
 | ``test_plotting.py``, ``test_examples.py`` | figures, exemples (dont le tutoriel) |
 
 ## 12. Évolutions envisagées
+
+Séparées en méthodes classiques (sans apprentissage, socle numpy/scipy)
+et méthodes apprises (extra ``deep``, PyTorch), qui posent en plus des
+questions de licence des poids, de données d'entraînement et de
+validation.
+
+### 12.1 Méthodes classiques
+
+- **Bruit de Poisson** : déconvolution Poisson + TV par ADMM (PIDAL,
+  Figueiredo & Bioucas-Dias 2010) pour les images à faible flux ;
+  stabilisation de variance avant les méthodes à bruit gaussien (comme
+  ``vst_denoise`` d'eoqual-denoising). *Pourquoi pas encore* : le calcul
+  est léger, mais l'interface ne l'est pas — l'attache de Poisson exige
+  des données en photo-électrons (gain, offset, bruit de lecture du
+  capteur, comme la PTC d'eoqual-measure), un modèle poisson-gaussien
+  pour être réaliste, et un benchmark à faible flux dédié ;
+  ``richardson_lucy(tv_weight=...)`` couvre déjà le cas Poisson + TV.
+  Candidat naturel pour la prochaine version.
+- **SPITFIR(e)** (Prigent et al. 2023) : a priori mêlant hessienne et
+  parcimonie, rapide, conçu pour la microscopie de fluorescence 3D.
+  *Pourquoi pas encore* : à réimplémenter depuis l'article (le code de
+  référence, sdeconv, n'est pas repris), et son intérêt sur des scènes
+  d'observation de la Terre — texturées, sans fond noir — reste à
+  démontrer face à la TV et au Plug-and-Play.
+- **Richardson-Lucy à pas adaptatif** (gradient projeté mis à l'échelle,
+  SGP, Bonettini, Zanella & Zanni 2009), équivalent pour RL du pas de
+  Barzilai-Borwein de Landweber.
+- Restauration vers une **FTM cible** (filtre qui ramène la FTM du
+  système à une FTM de référence plutôt qu'à 1) : à étudier.
+- PSF variable dans le champ **connue** (carte de PSF fournie par
+  l'utilisateur, restauration par tuiles) : le mécanisme existe dans
+  ``blind_optics`` (§8.2.6), à exposer pour des PSF données.
+- ``blind_optics`` : filé (longueur, direction) comme paramètre du
+  modèle optique, pour les imageurs à balayage ou à TDI mal synchronisé
+  (§10.1) ; **diversité** (deux images à défocalisations
+  connues, comme la diversité de phase d'eoqual-phaseretrieval) pour
+  lever l'ambiguïté de signe et rendre les aberrations impaires
+  identifiables ; a priori sur θ issu d'une mesure de FTM sur bord
+  (eoqual-measure) ; gradient analytique de ``J(θ)`` ; modèle
+  d'échantillonnage avec repliement.
+- **Terme d'erreur parcimonieux** pour une PSF imparfaite et **base de
+  PSF à poids variables** dans le champ : idées issues d'ErA, transposables
+  sans apprentissage (protocole au §12.2.6).
+- Aveugle : sélection des contours saillants (Cho & Lee 2009), a priori
+  sur les intensités (Pan et al. 2014), pixels saturés (étoiles, reflets).
+
+### 12.2 Méthodes apprises (extra ``deep``)
+
+#### 12.2.1 Panorama des solutions neuronales (vérifié le 2026-11-08)
+
+Critères : **licence** du code et des poids compatible avec un module MIT,
+**publication** décrivant la méthode, **code d'entraînement** publié (le
+réentraînement sur des PSF d'instrument et des scènes d'observation de la
+Terre est indispensable : les poids publiés sont appris sur des
+photographies), **poids** disponibles. Licences lues sur les dépôts
+(fichier LICENSE ou métadonnées GitHub / Hugging Face).
+
+*Recommandées — code permissif, entraînement publié, poids disponibles :*
+
+| Solution | Principe | Code | Entraînement | Poids | Intérêt pour l'imagerie spatiale |
+|---|---|---|---|---|---|
+| **USRNet** (Zhang, Van Gool & Timofte, CVPR 2020), KAIR | HQS déplié, **PSF, σ et facteur d'échelle en entrée** | MIT | ✅ ``main_train_usrnet.py`` (KAIR) | MIT (``usrnet.pth``, ``usrnet_tiny.pth``) | **intégré** : ``usrnet`` (§7.2), réentraînement §7.3 |
+| **DeepInv** (déjà dans l'extra ``deep``) | bibliothèque : algorithmes déroulés, DRUNet, RAM, générateurs de PSF, **pertes auto-supervisées** (imagerie équivariante, SURE, R2R) | BSD-3-Clause | ✅ entraîneur générique | DRUNet : BSD-3-Clause ; RAM : licence **non déclarée** sur Hugging Face (``mterris/ram``) | **entraîner sans vérité terrain**, sur des images réelles d'un capteur |
+| **Galaxy-Deconv** (Li & Alexander, MNRAS) | ADMM déroulé, PSF en entrée, bruit de Poisson (galaxies, lentillage faible) | MIT | ✅ ``train.py`` + simulation GalSim | ✅ ``saved_models`` | imagerie spatiale à PSF connue et faible flux ; référence compacte de déroulement physique |
+
+*Utilisables, mais génériques ou orientées produit :*
+
+- **NAFNet**, **Restormer** (MIT, entraînement et poids) : réseaux de
+  restauration génériques, de bout en bout, sans PSF en entrée ;
+  réentraînables sur paires simulées, mais rien n'empêche d'inventer des
+  détails — pour l'aspect, pas pour la mesure.
+- **Satlas Super-Resolution** (Allen AI, Apache-2.0, entraînement et
+  poids ; Sentinel-2 → NAIP) : super-résolution de type GAN, qui invente
+  des détails ; licence des poids et des données à vérifier.
+- **SEN2SR** (ESA OpenSR, code CC0, poids Hugging Face) : super-résolution
+  Sentinel-2 à cohérence radiométrique ; licence des poids non vérifiée,
+  entraînement absent du dépôt.
+- **HighRes-net** (super-résolution multi-images, PROBA-V de l'ESA,
+  entraînement publié) : licence cumulant Apache-2.0 et « Do No Harm
+  License » (restrictions d'usage) — à éviter dans un module MIT.
+
+*Écartées pour la licence :* DSen2 (GPL-3.0, intégrable seulement en
+dépendance externe), Z-PNN (GRIP-UNINA, usage non lucratif), KernelGAN
+(Weizmann, académique non commercial), SelfDeblur et le dépôt d'origine de
+l'imagerie équivariante (aucune licence ; l'imagerie équivariante est
+réimplémentée sous BSD-3-Clause dans DeepInv), DWDN (aucune licence,
+§12.2.4), poids de Deep-Blur (non commerciaux, §12.2.5).
+
+*Suites retenues* : (1) **USRNet réentraîné sur nos PSF** — fait en
+0.5.0 (§7.2, §7.3) ; (2) **apprentissage auto-supervisé de DeepInv** pour
+adapter un réseau (USRNet, DRUNet) à un capteur réel sans images de
+référence ; (3) **Galaxy-Deconv** comme référence de déroulement ADMM
+pour PSF spatiale et bruit de Poisson. Restent à confirmer : licence des
+poids de RAM, SEN2SR et Satlas.
+
+#### 12.2.2 A priori de diffusion
 
 - **A priori de diffusion** dans le Plug-and-Play : DiffPIR (Zhu et al.
   2023), échantillonnage a posteriori DPS (Chung et al. 2023), via deepinv
@@ -938,6 +1248,12 @@ connus).
   des images de télédétection, et résultat **stochastique** pouvant
   « inventer » des détails plausibles — inacceptable sans protocole de
   validation pour une mesure quantitative.
+#### 12.2.3 DPIR et calcul sur GPU
+
+- **DPIR** (débruiteur DRUNet et calendrier dédiés) et **calcul sur GPU**
+  (PyTorch) des méthodes itératives.
+#### 12.2.4 DWDN
+
 - **DWDN — Wiener profond** (Dong, Roth & Schiele, NeurIPS 2020 ;
   extension DWDN+, arXiv 2103.09962) : déconvolution **non aveugle** qui
   applique un filtre de Wiener dans un espace de caractéristiques appris
@@ -1000,6 +1316,8 @@ connus).
   l'entraînement, et gain à démontrer sur des flous d'instrument —
   réguliers, sans les noyaux de bougé complexes où l'article mesure son
   avance.
+#### 12.2.5 Deep-Blur
+
 - **Deep-Blur — identification apprise d'une PSF paramétrique**
   (Debarnot & Weiss, *Biological Imaging* 4, e13, 2024 ; article CC BY
   4.0) : la méthode publiée la plus proche de ``blind_optics`` (§8.2).
@@ -1091,6 +1409,7 @@ connus).
   - comme toute méthode apprise : GPU, généralisation hors des plages
     d'entraînement non garantie — d'où le maintien des estimateurs
     ``evidence`` et ``l0``, interprétables, à côté.
+#### 12.2.6 ErA
 
 - **ErA — déroulement d'ALM « conscient de l'erreur »** (Vo & Park,
   atelier NeurIPS 2025 COML ; arXiv 2606.06540, licence CC BY 4.0) :
@@ -1153,42 +1472,6 @@ connus).
      reste rapide (K FFT) et s'intègre aux méthodes itératives (Nagy &
      O'Leary 1998 ; Denis et al. 2015). Validation : banc
      ``examples/blind_optics.py`` (courbure de champ), contre les tuiles.
-- **DPIR** (débruiteur DRUNet et calendrier dédiés) et **calcul sur GPU**
-  (PyTorch) des méthodes itératives.
-- **Bruit de Poisson** : déconvolution Poisson + TV par ADMM (PIDAL,
-  Figueiredo & Bioucas-Dias 2010) pour les images à faible flux ;
-  stabilisation de variance avant les méthodes à bruit gaussien (comme
-  ``vst_denoise`` d'eoqual-denoising). *Pourquoi pas encore* : le calcul
-  est léger, mais l'interface ne l'est pas — l'attache de Poisson exige
-  des données en photo-électrons (gain, offset, bruit de lecture du
-  capteur, comme la PTC d'eoqual-measure), un modèle poisson-gaussien
-  pour être réaliste, et un benchmark à faible flux dédié ;
-  ``richardson_lucy(tv_weight=...)`` couvre déjà le cas Poisson + TV.
-  Candidat naturel pour la prochaine version.
-- **SPITFIR(e)** (Prigent et al. 2023) : a priori mêlant hessienne et
-  parcimonie, rapide, conçu pour la microscopie de fluorescence 3D.
-  *Pourquoi pas encore* : à réimplémenter depuis l'article (le code de
-  référence, sdeconv, n'est pas repris), et son intérêt sur des scènes
-  d'observation de la Terre — texturées, sans fond noir — reste à
-  démontrer face à la TV et au Plug-and-Play.
-- **Richardson-Lucy à pas adaptatif** (gradient projeté mis à l'échelle,
-  SGP, Bonettini, Zanella & Zanni 2009), équivalent pour RL du pas de
-  Barzilai-Borwein de Landweber.
-- Restauration vers une **FTM cible** (filtre qui ramène la FTM du
-  système à une FTM de référence plutôt qu'à 1) : à étudier.
-- PSF variable dans le champ **connue** (carte de PSF fournie par
-  l'utilisateur, restauration par tuiles) : le mécanisme existe dans
-  ``blind_optics`` (§8.2.6), à exposer pour des PSF données.
-- ``blind_optics`` : filé (longueur, direction) comme paramètre du
-  modèle optique, pour les imageurs à balayage ou à TDI mal synchronisé
-  (§10.1) ; **diversité** (deux images à défocalisations
-  connues, comme la diversité de phase d'eoqual-phaseretrieval) pour
-  lever l'ambiguïté de signe et rendre les aberrations impaires
-  identifiables ; a priori sur θ issu d'une mesure de FTM sur bord
-  (eoqual-measure) ; gradient analytique de ``J(θ)`` ; modèle
-  d'échantillonnage avec repliement.
-- Aveugle : sélection des contours saillants (Cho & Lee 2009), a priori
-  sur les intensités (Pan et al. 2014), pixels saturés (étoiles, reflets).
 
 ---
 

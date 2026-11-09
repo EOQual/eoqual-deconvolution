@@ -22,6 +22,6 @@ def test_example_runs(name, tmp_path):
     assert any(tmp_path.glob("*.html"))
 
 
-@pytest.mark.parametrize("name", ["benchmark", "blind_optics_benchmark", "wiener_hunt_benchmark", "figures"])
+@pytest.mark.parametrize("name", ["benchmark", "blind_optics_benchmark", "wiener_hunt_benchmark", "figures", "usrnet_benchmark", "train_usrnet"])
 def test_benchmark_compiles(name):
     compile((EXAMPLES / f"{name}.py").read_text(encoding="utf-8"), f"{name}.py", "exec")
