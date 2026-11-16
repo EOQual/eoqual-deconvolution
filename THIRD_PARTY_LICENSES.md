@@ -42,7 +42,7 @@ scikit-image.
 | Extra | Paquets | Licence | Remarque |
 |---|---|---|---|
 | `pnp` | eoqual-denoising | MIT | 🟢 avec les débruiteurs du socle d'eoqual-denoising |
-| `deep` | eoqual-denoising, torch, deepinv, einops | BSD-3-Clause / MIT | 🟢 code et poids DRUNet (BSD-3-Clause) ; `usrnet` : architecture reprise de KAIR et poids `usrnet.pth`, `usrnet_tiny.pth` (MIT, © 2019 Kai Zhang), téléchargés à la demande et vérifiés par SHA-256 (§3.2) |
+| `deep` | eoqual-denoising, eoqual-neural (torch, deepinv, einops) | BSD-3-Clause / MIT | 🟢 code et poids DRUNet (BSD-3-Clause) ; `usrnet` : architecture reprise de KAIR et poids `usrnet.pth`, `usrnet_tiny.pth` (MIT, © 2019 Kai Zhang), téléchargés à la demande et vérifiés par SHA-256 (§3.2) |
 | `optim` | scikit-optimize | BSD-3-Clause |
 | cvxpy (développement seulement, test de référence) | Apache-2.0 | 🟢 |
 
@@ -66,7 +66,8 @@ un logiciel distribué ou un service. Le débruiteur par défaut,
 | rich | MIT |
 | eoqual-core, eoqual-metrics, eoqual-viz, eoqual-denoising | MIT |
 | scikit-optimize | BSD-3-Clause |
-| torch, deepinv | BSD-3-Clause |
+| torch, deepinv (via eoqual-neural) | BSD-3-Clause |
+| eoqual-neural | MIT |
 | einops | MIT |
 
 eoqual-metrics installe lui-même d'autres dépendances (OpenCV, sewar,
@@ -85,7 +86,8 @@ ici sous MIT.
 
 ### 3.2 Exception : USRNet (code repris de KAIR, MIT)
 
-`deep/usrnet.py` reprend la structure et les noms de paramètres du réseau
+Le réseau USRNet, aujourd'hui dans eoqual-neural (`eoqual.neural.unrolled.usrnet`,
+même exception documentée), reprend la structure et les noms de paramètres du réseau
 USRNet de KAIR (`models/network_usrnet.py`, `models/basicblock.py`,
 © 2019 Kai Zhang, **licence MIT**, https://github.com/cszn/KAIR), afin
 de charger les poids publiés par l'auteur (`usrnet.pth`,
@@ -97,7 +99,8 @@ registre du paquet ; boucle d'inférence réécrite), la notice de licence
 est citée en tête du module, et la licence MIT de KAIR est compatible avec
 celle du paquet. Les poids ne sont pas redistribués : ils sont téléchargés
 depuis la publication de KAIR et vérifiés par empreinte
-(`deep/weights.py`). Les outils d'entraînement (`deep/training.py`) sont
+(`eoqual.neural.weights`). Les outils d'entraînement (`training.py`, et la
+boucle `eoqual.neural.unrolled.training`) sont
 écrits pour ce paquet, depuis l'article et le protocole décrit dans
 REFERENCE_TECHNIQUE.md §7.3.
 

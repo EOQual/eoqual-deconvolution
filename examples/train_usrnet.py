@@ -26,7 +26,7 @@ from pathlib import Path
 import numpy as np
 
 from eoqual.deconvolution import deconvolve
-from eoqual.deconvolution.deep.training import (
+from eoqual.deconvolution.training import (
     NoiseSampler, PSFSampler, TrainingConfig, load_training_images, train_usrnet,
 )
 from eoqual.deconvolution.simulate import add_noise, blur

@@ -1,4 +1,4 @@
-"""USRNet (extra deep) : module de données, poids publiés, bords, réentraînement."""
+"""USRNet (extra deep, réseau dans eoqual-neural) : module de données, poids publiés, bords, réentraînement."""
 import os
 
 import numpy as np
@@ -10,10 +10,10 @@ from _helpers import gain_db  # noqa: E402
 from conftest import SIGMA  # noqa: E402
 from eoqual.core.kernel import psf2otf  # noqa: E402
 from eoqual.deconvolution import deconvolve  # noqa: E402
-from eoqual.deconvolution.deep.training import (  # noqa: E402
+from eoqual.deconvolution.training import (  # noqa: E402
     NoiseSampler, PSFSampler, TrainingConfig, train_usrnet,
 )
-from eoqual.deconvolution.deep.usrnet import USRNet, data_step, load_usrnet, p2o  # noqa: E402
+from eoqual.neural.unrolled.usrnet import USRNet, data_step, load_usrnet, p2o  # noqa: E402
 from eoqual.deconvolution.psf import gaussian_psf, motion_psf  # noqa: E402
 from eoqual.deconvolution.simulate import simulate_observation  # noqa: E402
 
@@ -118,3 +118,20 @@ def test_mask_dead_lines(scene, blurred, psf):
     without = psnr(deconvolve(damaged, psf, "usrnet", **kw))
     assert with_mask > without + 3.0
     assert with_mask > psnr(deconvolve(blurred, psf, "usrnet", **kw)) - 1.0
+
+
+def test_deprecated_deep_paths_still_work():
+    import importlib
+    import sys
+
+    for m in [m for m in sys.modules if m.startswith("eoqual.deconvolution.deep")]:
+        del sys.modules[m]
+    with pytest.warns(DeprecationWarning):
+        old = importlib.import_module("eoqual.deconvolution.deep.usrnet")
+    from eoqual.deconvolution.backends.usrnet import usrnet_deconvolve
+
+    assert old.usrnet_deconvolve is usrnet_deconvolve and old.USRNet is USRNet
+    from eoqual.deconvolution.deep.training import train_usrnet as old_train
+    from eoqual.deconvolution.training import train_usrnet as new_train
+
+    assert old_train is new_train

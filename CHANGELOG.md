@@ -6,6 +6,20 @@ dans `REFERENCE_TECHNIQUE.md`, annexe A.
 
 ## Version History
 
+0.6.0 (2026-11-16)
+
+:   -   **Réseau USRNet déplacé dans eoqual-neural** (nouveau module qui
+        regroupe les réseaux d'EOQual par rôle) : architecture, poids et
+        boucle d'apprentissage dans `eoqual.neural.unrolled`. Ce paquet
+        garde la méthode `usrnet` et ce qui relève de la déconvolution
+        (bords, pixels masqués ou saturés, échelle : `backends/usrnet.py`)
+        et les paires de réentraînement (`eoqual.deconvolution.training`,
+        même `train_usrnet`). Sorties identiques.
+    -   `eoqual.deconvolution.deep` déprécié (renvois avec
+        `DeprecationWarning`) ; cache des poids `~/.cache/eoqual/neural`,
+        l'ancien cache étant réutilisé.
+    -   Extra `deep` = eoqual-denoising 0.3.0 + eoqual-neural 0.1.0.
+
 0.5.0 (2026-11-08)
 
 :   -   `usrnet` (nouvelle méthode, extra `deep`) : USRNet (Zhang, Van Gool

@@ -48,7 +48,7 @@ eoqual-viz, tous sous licence permissive.
 | Extra | Commande | Débloque | Pourquoi optionnel |
 |---|---|---|---|
 | `pnp` | `pip install "eoqual-deconvolution[pnp]"` | `pnp_hqs`, `pnp_admm` avec les débruiteurs du socle d'eoqual-denoising (`nl_ridge`, `nl_bayes`, `tv_chambolle`...) | dépend d'un autre module |
-| `deep` | `pip install "eoqual-deconvolution[deep]"` | Plug-and-Play avec les débruiteurs à réseau d'eoqual-denoising (`drunet`...) ; `usrnet` (réseau déplié) et son réentraînement | dépendance lourde (PyTorch) ; poids DRUNet BSD-3-Clause, poids USRNet MIT (téléchargés à la demande) |
+| `deep` | `pip install "eoqual-deconvolution[deep]"` | réseaux de neurones, fournis par [eoqual-neural](https://github.com/EOQual/eoqual-neural) : Plug-and-Play avec les débruiteurs appris (`drunet`...) ; `usrnet` (réseau déplié) et son réentraînement (`eoqual.deconvolution.training`) | dépendance lourde (PyTorch) ; poids DRUNet BSD-3-Clause, poids USRNet MIT (téléchargés à la demande) |
 | `optim` | `pip install "eoqual-deconvolution[optim]"` | `optimize_parameters` (optimisation bayésienne) | scikit-optimize (BSD-3-Clause), inutile pour déconvoluer |
 
 Sans l'extra requis, l'appel de la méthode lève une erreur explicite qui

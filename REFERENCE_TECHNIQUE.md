@@ -464,7 +464,10 @@ près, et la solution en diffère de moins de 5e-3
 
 ### 7.2 `usrnet` — réseau déplié (extra ``deep``)
 
-``deep/usrnet.py``. USRNet (Zhang, Van Gool & Timofte, CVPR 2020) **déplie**
+Réseau dans eoqual-neural (``eoqual.neural.unrolled.usrnet``) depuis la
+version 0.6.0 ; ce paquet garde la méthode ``"usrnet"`` et ce qui relève
+de la déconvolution (bords, pixels masqués ou saturés, échelle) dans
+``backends/usrnet.py``. USRNet (Zhang, Van Gool & Timofte, CVPR 2020) **déplie**
 l'algorithme HQS du §7.1 sur un nombre fixe d'itérations (8, ou 6 pour
 le modèle réduit) et en **apprend** les ingrédients de bout en bout, au
 lieu de les régler :
@@ -491,8 +494,9 @@ complexe actuelle de PyTorch (``torch.rfft`` a été supprimée) ; exception
 documentée dans THIRD_PARTY_LICENSES.md §3.2. Poids ``"usrnet"`` (17.0 M
 de paramètres) et ``"usrnet_tiny"`` (0.59 M), téléchargés à la demande
 depuis la publication v1.0 de KAIR et vérifiés par SHA-256
-(``deep/weights.py`` ; cache ``$EOQUAL_WEIGHTS_DIR`` ou
-``~/.cache/eoqual/deconvolution``). Vérifications : chargement strict des
+(``eoqual.neural.weights`` ; cache ``$EOQUAL_WEIGHTS_DIR`` ou
+``~/.cache/eoqual/neural``, l'ancien cache ``~/.cache/eoqual/deconvolution``
+étant réutilisé). Vérifications : chargement strict des
 poids, module de données égal à la formule fermée à 2·10⁻¹⁵ près, OTF
 égale à ``eoqual.core.kernel.psf2otf``. Le réseau, en couleur, reçoit
 l'image répliquée sur trois canaux ; la sortie est leur moyenne. L'image
@@ -564,7 +568,8 @@ jitter, filé) ni ses scènes ni son bruit. Comme la PSF est une entrée du
 réseau, il suffit de lui **montrer la bonne famille de flous** : réglage
 fin depuis les poids publiés, ou entraînement complet.
 
-**Outils** (``deep/training.py``, extra ``deep``) :
+**Outils** (``training.py``, extra ``deep`` ; boucle d'apprentissage dans
+``eoqual.neural.unrolled.training``, paires de déconvolution ici) :
 
 | Outil | Rôle |
 |---|---|
@@ -1552,3 +1557,11 @@ scènes synthétiques.
       second) n'apportait rien sur l0 seul : retirée ;
     - base de Zernike et PSF de phase : déplacées d'eoqual-phaseretrieval
       dans eoqual-core 0.5.0 (``pupil``) et réécrites sans poppy.
+11. **Réseau dans eoqual-neural (0.6.0)** : USRNet (architecture, poids,
+    inférence sur domaine périodique, boucle d'apprentissage) passe dans
+    eoqual-neural, qui regroupe les réseaux d'EOQual par rôle. Restent ici
+    la méthode ``usrnet`` (bords, masque, saturation, échelle :
+    ``backends/usrnet.py``) et les paires de déconvolution
+    (``training.py``) ; ``deep/`` conservé en renvoi déprécié. Sorties
+    identiques au bit près (USRNet et Plug-and-Play DRUNet, flous gaussien
+    et bougé).

@@ -100,8 +100,8 @@ METHODS_CONFIGS: OrderedDict = OrderedDict(
         "usrnet": {
             "family": "apprise (dépliée)",
             "extra": "deep",
-            "license": "MIT (KAIR, Kai Zhang ; code et poids)",
-            "restriction": "PSF et σ connus ; poids publiés appris sur photographies (réentraînement : deep.training)",
+            "license": "MIT (KAIR, Kai Zhang ; code et poids ; réseau dans eoqual-neural)",
+            "restriction": "PSF et σ connus ; poids publiés appris sur photographies (réentraînement : eoqual.deconvolution.training)",
             "reference": "Zhang, Van Gool & Timofte (2020) CVPR",
         },
         "blind_l0": {
