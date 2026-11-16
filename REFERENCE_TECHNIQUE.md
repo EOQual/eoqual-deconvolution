@@ -1565,3 +1565,5 @@ scènes synthétiques.
     (``training.py``) ; ``deep/`` conservé en renvoi déprécié. Sorties
     identiques au bit près (USRNet et Plug-and-Play DRUNet, flous gaussien
     et bougé).
+12. **Dépendances (0.6.1)** : extras épinglés sur eoqual-denoising v0.3.1
+    et eoqual-neural v0.1.1, sans changement de code.

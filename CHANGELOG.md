@@ -6,6 +6,13 @@ dans `REFERENCE_TECHNIQUE.md`, annexe A.
 
 ## Version History
 
+0.6.1 (2026-11-16)
+
+:   -   Dépendances des extras mises à jour, sans changement de code :
+        eoqual-denoising v0.3.1 (arguments d'`optimize_parameters`
+        vérifiés avant l'import de scikit-optimize) et eoqual-neural
+        v0.1.1 (correctif d'installation par Poetry).
+
 0.6.0 (2026-11-16)
 
 :   -   **Réseau USRNet déplacé dans eoqual-neural** (nouveau module qui
