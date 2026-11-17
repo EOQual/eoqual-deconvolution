@@ -6,6 +6,10 @@ dans `REFERENCE_TECHNIQUE.md`, annexe A.
 
 ## Version History
 
+0.6.2 (2026-11-17)
+
+:   -   **Notation du bruit d'entraînement** (`NoiseSampler`) alignée sur eoqual-measure : σ² = a·L + b, `a` pente, `b` plancher ; tirages inchangés. Extra `pnp` : eoqual-denoising v0.3.2.
+
 0.6.1 (2026-11-16)
 
 :   -   Dépendances des extras mises à jour, sans changement de code :

@@ -108,7 +108,8 @@ class NoiseSampler:
     Bruit : écart-type ``sigma`` (fraction de la dynamique, image dans
     [0, 1]) tiré uniformément ; avec ``poisson_fraction > 0``, une part des
     exemples reçoit un bruit poisson-gaussien de même écart-type au niveau
-    moyen (``σ² = a + b·L``). ``zero_fraction`` : part sans bruit.
+    moyen (``σ² = a·L + b``, a pente, b plancher : notation d'eoqual-measure).
+    ``zero_fraction`` : part sans bruit.
     """
 
     sigma: tuple = (0.0, 0.05)
@@ -121,9 +122,9 @@ class NoiseSampler:
         s = float(rng.uniform(*self.sigma))
         if rng.random() < self.poisson_fraction:
             mean = max(float(clean.mean()), 1e-3)
-            a = rng.uniform(0.0, 0.5) * s**2                     # part du bruit de lecture
-            b = (s**2 - a) / mean
-            noise = rng.standard_normal(clean.shape) * np.sqrt(a + b * np.clip(clean, 0, None))
+            b = rng.uniform(0.0, 0.5) * s**2                     # plancher : part du bruit de lecture
+            a = (s**2 - b) / mean                                # pente : bruit photonique
+            noise = rng.standard_normal(clean.shape) * np.sqrt(a * np.clip(clean, 0, None) + b)
         else:
             noise = rng.normal(0.0, s, clean.shape)
         return clean + noise.astype(clean.dtype), s

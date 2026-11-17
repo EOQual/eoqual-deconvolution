@@ -574,7 +574,7 @@ fin depuis les poids publiés, ou entraînement complet.
 | Outil | Rôle |
 |---|---|
 | ``PSFSampler`` | loi des PSF : modèle optique (``optical_psf`` : Q, obturation, aberrations de Zernike, jitter, dans des plages), gaussiennes, filés ; probabilités par famille |
-| ``NoiseSampler`` | bruit gaussien ou poisson-gaussien (``σ² = a + b·L``), niveau tiré dans une plage, part sans bruit |
+| ``NoiseSampler`` | bruit gaussien ou poisson-gaussien (``σ² = a·L + b``, notation d'eoqual-measure), niveau tiré dans une plage, part sans bruit |
 | ``load_training_images`` | images nettes en niveaux de gris dans [0, 1] ; linéarisation (``gamma``) et réduction (``reduce``) |
 | ``PatchSampler`` | paires à la volée : vignette au hasard, retournement et rotation, PSF tirée, bruit ; ``borders="real"`` (défaut) : zone plus grande floutée puis recadrée, bruit, marge complétée par Wiener–Hunt **comme à l'inférence** (§7.2) ; ``borders="circular"`` : flou circulaire (cadre exact du module de données, plus rapide) |
 | ``TrainingConfig`` | poids de départ (``"usrnet"``, ``"usrnet_tiny"``, un fichier, ou aucun avec ``arch``), itérations, lot, vignette, taux et paliers, perte L1, graine, appareil, validation |
@@ -1567,3 +1567,6 @@ scènes synthétiques.
     et bougé).
 12. **Dépendances (0.6.1)** : extras épinglés sur eoqual-denoising v0.3.1
     et eoqual-neural v0.1.1, sans changement de code.
+13. **Notation du bruit (0.6.2)** : ``NoiseSampler`` note σ² = a·L + b
+    (a pente, b plancher), comme eoqual-measure et désormais tous les
+    modules ; tirages aléatoires inchangés.
