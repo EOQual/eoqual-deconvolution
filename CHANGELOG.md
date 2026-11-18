@@ -6,6 +6,10 @@ dans `REFERENCE_TECHNIQUE.md`, annexe A.
 
 ## Version History
 
+0.6.3 (2026-11-18)
+
+:   -   **Notation du bruit d'entraînement** (`NoiseSampler`) : σ² = a + b·L, `a` plancher, `b` pente (bruit stationnaire a = σ², b = 0), commune à tous les modules EOQual, eoqual-measure 0.4.0 compris ; lettres inversées par rapport à 0.6.2, tirages inchangés. Extras `pnp` et `deep` : eoqual-denoising v0.4.0.
+
 0.6.2 (2026-11-17)
 
 :   -   **Notation du bruit d'entraînement** (`NoiseSampler`) alignée sur eoqual-measure : σ² = a·L + b, `a` pente, `b` plancher ; tirages inchangés. Extra `pnp` : eoqual-denoising v0.3.2.

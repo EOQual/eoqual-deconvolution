@@ -1570,7 +1570,7 @@ scènes synthétiques.
 13. **Notation du bruit (0.6.2)** : ``NoiseSampler`` note σ² = a·L + b
     (a pente, b plancher), comme eoqual-measure et désormais tous les
     modules ; tirages aléatoires inchangés.
-14. **Notation du bruit inversée (2026-11-18)** : retour à σ² = a + b·L
+14. **Notation du bruit inversée (0.6.3)** : retour à σ² = a + b·L
     (a plancher, b pente ; bruit stationnaire a = σ², b = 0), désormais
     commune à tous les modules EOQual, eoqual-measure compris ; tirages
     aléatoires inchangés (le plancher est toujours tiré en premier).
