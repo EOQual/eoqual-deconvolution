@@ -1574,3 +1574,7 @@ scènes synthétiques.
     (a plancher, b pente ; bruit stationnaire a = σ², b = 0), désormais
     commune à tous les modules EOQual, eoqual-measure compris ; tirages
     aléatoires inchangés (le plancher est toujours tiré en premier).
+15. **Dépendances (0.6.4)** : extras `pnp` et `deep` épinglés sur
+    eoqual-denoising v0.5.0, sans changement de code. Le Plug-and-Play avec
+    `nl_bayes` change de résultat sur image couleur (étape 2 de NL-Bayes à
+    canaux filtrés ensemble depuis eoqual-denoising 0.4.1).

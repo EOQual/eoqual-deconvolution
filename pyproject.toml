@@ -2,7 +2,7 @@
 
 [tool.poetry]
 name = "eoqual-deconvolution"
-version = "0.6.3"
+version = "0.6.4"
 description = "Image deconvolution methods for Earth observation"
 authors = ["Olivier Amram <olivier.amram@free.fr>"]
 maintainers = [
@@ -38,7 +38,7 @@ plotly = "*"
 rich = "*"
 
 # --- Extra "pnp" : débruiteurs d'eoqual-denoising (MIT) pour Plug-and-Play ---
-eoqual-denoising = {git = "https://github.com/EOQual/eoqual-denoising.git", tag = "v0.4.0", optional = true}
+eoqual-denoising = {git = "https://github.com/EOQual/eoqual-denoising.git", tag = "v0.5.0", optional = true}
 # --- Extra "deep" : réseaux de neurones (USRNet ; DRUNet... pour le
 # Plug-and-Play), fournis par eoqual-neural (MIT ; PyTorch, deepinv). ---
 eoqual-neural = {git = "https://github.com/EOQual/eoqual-neural.git", tag = "v0.1.1", optional = true}

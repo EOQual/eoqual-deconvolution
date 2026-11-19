@@ -6,6 +6,10 @@ dans `REFERENCE_TECHNIQUE.md`, annexe A.
 
 ## Version History
 
+0.6.4 (2026-11-19)
+
+:   -   Extras `pnp` et `deep` : eoqual-denoising v0.5.0, sans changement de code. NL-Bayes couleur y filtre les trois canaux ensemble à l'étape 2 (correction de la 0.4.1, +0,6 à +0,8 dB en couleur) et est calculé par la bibliothèque nlbayes-ext ; le Plug-and-Play avec `nl_bayes` change donc de résultat sur image couleur.
+
 0.6.3 (2026-11-18)
 
 :   -   **Notation du bruit d'entraînement** (`NoiseSampler`) : σ² = a + b·L, `a` plancher, `b` pente (bruit stationnaire a = σ², b = 0), commune à tous les modules EOQual, eoqual-measure 0.4.0 compris ; lettres inversées par rapport à 0.6.2, tirages inchangés. Extras `pnp` et `deep` : eoqual-denoising v0.4.0.
