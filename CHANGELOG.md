@@ -6,6 +6,10 @@ dans `REFERENCE_TECHNIQUE.md`, annexe A.
 
 ## Version History
 
+0.6.5 (2026-11-23)
+
+:   -   Extras `pnp` et `deep` : eoqual-denoising v0.6.0 (nlbayes-ext v0.2.0), sans changement de code ni de résultat : les sorties de `nl_bayes` sont identiques au bit près.
+
 0.6.4 (2026-11-19)
 
 :   -   Extras `pnp` et `deep` : eoqual-denoising v0.5.0, sans changement de code. NL-Bayes couleur y filtre les trois canaux ensemble à l'étape 2 (correction de la 0.4.1, +0,6 à +0,8 dB en couleur) et est calculé par la bibliothèque nlbayes-ext ; le Plug-and-Play avec `nl_bayes` change donc de résultat sur image couleur.

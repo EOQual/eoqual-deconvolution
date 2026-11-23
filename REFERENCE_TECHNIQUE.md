@@ -1578,3 +1578,6 @@ scènes synthétiques.
     eoqual-denoising v0.5.0, sans changement de code. Le Plug-and-Play avec
     `nl_bayes` change de résultat sur image couleur (étape 2 de NL-Bayes à
     canaux filtrés ensemble depuis eoqual-denoising 0.4.1).
+16. **Dépendances (0.6.5)** : extras `pnp` et `deep` épinglés sur
+    eoqual-denoising v0.6.0 (nlbayes-ext v0.2.0), sans changement de code
+    ni de résultat.
