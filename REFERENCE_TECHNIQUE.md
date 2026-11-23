@@ -1581,3 +1581,5 @@ scènes synthétiques.
 16. **Dépendances (0.6.5)** : extras `pnp` et `deep` épinglés sur
     eoqual-denoising v0.6.0 (nlbayes-ext v0.2.0), sans changement de code
     ni de résultat.
+17. **Dépendances (0.6.6)** : eoqual-metrics v1.2.4 (correction de `s3`),
+    sans changement de code ni de résultat (seul l'indice SI est employé).

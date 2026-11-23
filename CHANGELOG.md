@@ -6,6 +6,10 @@ dans `REFERENCE_TECHNIQUE.md`, annexe A.
 
 ## Version History
 
+0.6.6 (2026-11-23)
+
+:   -   Dépendance eoqual-metrics v1.2.4 (était v1.2.3), sans changement de code ni de résultat : la correction de `s3` dans eoqual-metrics ne touche pas l'indice SI, seul indicateur employé ici (`tuning`).
+
 0.6.5 (2026-11-23)
 
 :   -   Extras `pnp` et `deep` : eoqual-denoising v0.6.0 (nlbayes-ext v0.2.0), sans changement de code ni de résultat : les sorties de `nl_bayes` sont identiques au bit près.
