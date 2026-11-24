@@ -24,7 +24,7 @@ L'image finale est restaurée en non aveugle avec la PSF estimée
 La minimisation alternée directe ``min_{x,h} ‖h ∗ x − y‖² + λTV(x)``
 (PALM) a été essayée et écartée : elle converge vers la solution
 triviale (``h`` = Dirac, ``x = y``) ou vers une PSF décalée selon λ
-(docs/technique/reference.md, §13).
+(docs/technique/pistes.md, §13).
 """
 from __future__ import annotations
 

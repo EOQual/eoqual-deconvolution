@@ -6,7 +6,11 @@ Versions publiées et contenu de chacune.
 
 Non publié
 
-:   -   Documentation réorganisée : documents techniques dans
+:   -   Référence technique découpée en documents spécialisés dans
+        `docs/technique/` (modèle et bords, méthodes classiques,
+        Plug-and-Play, aveugle, optimisation, PSF et simulation, pistes) ;
+        les chapitres gardent leur numéro.
+    -   Documentation réorganisée : documents techniques dans
         `docs/technique/`, publiés avec l'API et les notes de version
         par Sphinx et MyST (`docs/`). Les documents décrivent l'état
         présent ; ce qui change d'une version à l'autre est dans ce

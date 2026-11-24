@@ -16,7 +16,7 @@ Ouvrez une issue avec :
 
 Ouvrez une issue décrivant la méthode (nom, référence bibliographique,
 ce qu'elle apporte par rapport au catalogue — voir
-[référence technique](docs/technique/reference.md)). Pas besoin de savoir l'implémenter pour la
+[référence technique](docs/technique/index.md)). Pas besoin de savoir l'implémenter pour la
 proposer.
 
 ## Implémenter une méthode
@@ -28,7 +28,7 @@ dans `src/eoqual/deconvolution/backends/`, qui prépare le problème par
 `sigma` dans les unités de l'image, donne ses paramètres sans dimension
 ou en multiples de σ, accepte `mask=` et `saturation=` (en passant son
 attache aux données par `Problem.fill` / `Problem.gradient_data`, voir
-[référence technique](docs/technique/reference.md) §2.2) ou les refuse explicitement, et n'a **pas de paramètre nommé `method`**
+[référence technique](docs/technique/modele-bords.md) §2.2) ou les refuse explicitement, et n'a **pas de paramètre nommé `method`**
 (réservé au dispatcher). Elle est déclarée dans
 `config.py::METHODS_CONFIGS` et `runner.py::_DISPATCH`, sa référence est
 ajoutée à [bibliographie](docs/technique/bibliographie.md), et ses paramètres réglables reçoivent un
@@ -67,7 +67,7 @@ Mettre à jour [benchmark](docs/technique/benchmark.md) avec `examples/benchmark
 ## Documentation
 
 Toute méthode nouvelle ou modifiée doit rester reflétée dans `README.md`
-(catalogue), [référence technique](docs/technique/reference.md) (principe, implémentation,
+(catalogue), [référence technique](docs/technique/index.md) (principe, implémentation,
 limites), `THIRD_PARTY_LICENSES.md` (licence) et [bibliographie](docs/technique/bibliographie.md)
 (référence).
 

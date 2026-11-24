@@ -3,7 +3,7 @@
 Comparaison chiffrée des méthodes : réglages par défaut, données
 incomplètes, réglages optimisés. Reproduction :
 `python examples/benchmark.py [--optimize]`. Le choix des réglages par
-défaut eux-mêmes est décrit dans [référence §9.1.](reference.md)
+défaut eux-mêmes est décrit dans [§9.1](optimisation.md).
 
 ## 1. Protocole
 
@@ -22,7 +22,7 @@ défaut eux-mêmes est décrit dans [référence §9.1.](reference.md)
   PyTorch) ; temps moyen par image.
 - **Bords** : chaque méthode avec son défaut — `boundary="unknown"` pour
   `wiener`, `tikhonov`, `fista_wavelet`, `tv_primal_dual` ; `"reflect"`
-  pour les autres ([référence §2.1](reference.md)).
+  pour les autres ([§2.1](modele-bords.md)).
 
 ## 2. Réglages par défaut — PSNR (dB) / SSIM
 
@@ -107,13 +107,13 @@ Plug-and-Play (qui complète déjà la marge), défavorable pour Landweber
   prix d'un temps 6 à 10 fois plus long ; `pnp_hqs` est à 0.1 à 0.9 dB
   derrière, 1.7 fois plus rapide. Avec DRUNet (extra `deep`) au lieu de
   NL-Ridge, `pnp_hqs` gagne encore +1.3 à +2.9 dB sur une partie de la
-  même image ([référence §7](reference.md)).
+  même image ([§7](plug-and-play.md)).
 - **Méthodes linéaires** : instantanées, +2.5 à +4.6 dB (`wiener`,
   `tikhonov`) ; le bon point de départ. `inverse` n'est qu'une référence.
 - **`blind_l0`** : sans connaître la PSF, résultat proche des méthodes
   linéaires à PSF connue (+2.8 à +4.2 dB sur l'observée), à condition de
   donner une taille de support proche de l'étendue du flou
-  ([référence §8](reference.md)).
+  ([§8](aveugle.md)).
 - **`wiener_hunt`** : au niveau de `tikhonov` (GCV) en moyenne
   (+0.02 dB sur 24 cas), sans réglage, en estimant σ au passage (3 %
   d'erreur médiane) ; bien plus sûr que `wiener_unsupervised` (§6).
@@ -134,7 +134,7 @@ sur une image réelle.
 ## 6. Wiener–Hunt — PSNR (dB), PSF connue
 
 `wiener_hunt` (λ et σ par vraisemblance marginale, [référence
-§3.5](reference.md)) face aux autres méthodes linéaires, réglages par défaut
+§3.5](methodes-classiques.md)) face aux autres méthodes linéaires, réglages par défaut
 (`python examples/wiener_hunt_benchmark.py IMAGE.tif`). Scènes
 256 × 256 : « astronaut » et un extrait d'orthophotographie (Toulouse
 Métropole, Licence Ouverte 2.0) réduit d'un facteur 2 ; flous gaussien
@@ -176,7 +176,7 @@ Moyennes : `wiener_hunt` 30.70, `tikhonov` 30.67, `wiener` 30.64,
 ## 7. Déconvolution aveugle contrainte par l'optique — PSNR (dB)
 
 `python examples/blind_optics_benchmark.py IMAGE.tif` ([référence
-§8.2.7](reference.md)) : Q = 1, obturation 0.3, jitter vrai 0.35 px (fixé sauf dans le
+§8.2.7](aveugle.md)) : Q = 1, obturation 0.3, jitter vrai 0.35 px (fixé sauf dans le
 cas « jitter libre »), restauration TV (`tv_primal_dual`) avec la PSF
 indiquée ; « urbain » et « parc » : orthophotographie réduite d'un
 facteur 4 (moyenne 2 × 2 puis un pixel sur deux). Colonnes `evidence` et
@@ -219,7 +219,7 @@ critère `evidence`.
 ## 8. USRNet — PSNR (dB), PSF connue, poids publiés
 
 `python examples/usrnet_benchmark.py IMAGE.tif` ([référence
-§7.2](reference.md)) : scènes 256 × 256 (« astronaut » ; orthophotographie de Toulouse
+§7.2](plug-and-play.md)) : scènes 256 × 256 (« astronaut » ; orthophotographie de Toulouse
 Métropole, Licence Ouverte 2.0, réduite d'un facteur 2), flous du §6, bruit
 blanc gaussien, graine 0, bords réels (flou simulé avec prolongement
 miroir) ; `usrnet` avec `boundary="unknown"` (défaut). `pnp_hqs` avec son

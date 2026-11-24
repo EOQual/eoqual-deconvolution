@@ -8,7 +8,7 @@ interactives correspondantes (`examples/output/tutorial_*.html`).
 
 Scène : « astronaut » (NASA, domaine public, scikit-image), 256×256 en
 niveaux de gris, dynamique [0, 1] ; bruit gaussien σ = 0.01.
-Détails de chaque méthode : [référence technique](reference.md) ;
+Détails de chaque méthode : [documents techniques](index.md) ;
 comparaison chiffrée complète : [benchmark](benchmark.md).
 
 ## Sommaire
@@ -177,7 +177,7 @@ deconvolve(y, psf, "pnp_hqs", sigma=0.01, denoiser="drunet")   # extra "deep"
 
 Sur l'image du benchmark (512×256, quatre flous), le Plug-and-Play
 gagne 0.5 à 2.4 dB sur la TV avec NL-Ridge (`pnp_admm`), et encore 1.3 à 2.9 dB avec
-DRUNet ([benchmark](benchmark.md), [référence §7](reference.md)). Tout
+DRUNet ([benchmark](benchmark.md), [§7](plug-and-play.md)). Tout
 débruiteur d'eoqual-denoising convient (`nl_means`, `bilateral`,
 `nl_bayes`...) ; vérifier sa licence (THIRD_PARTY_LICENSES.md).
 
@@ -197,7 +197,7 @@ Sur 24 cas (deux scènes, quatre flous, trois bruits), il gagne 1.3 dB en
 moyenne sur `pnp_hqs` et 2.4 dB sur la TV, en une demi-seconde. Ses poids
 publiés ont été appris sur des photographies ; pour un instrument donné,
 on le **réentraîne** sur ses PSF (`examples/train_usrnet.py`,
-[référence §7.3](reference.md)).
+[§7.3](plug-and-play.md)).
 
 ## 7. Données réelles : bords, saturation, pixels manquants, PSF d'instrument
 
@@ -218,7 +218,7 @@ oblige la solution à les respecter ; `"unknown"` cherche une scène plus
 grande que l'image et n'impose l'accord avec les données que sur l'image
 elle-même. La marge est complétée à chaque itération par le flou de
 l'estimée courante, si bien qu'elle ne tire jamais la solution ; elle est
-jetée à la fin. Schéma et détails : [référence §2.1.](reference.md)
+jetée à la fin. Schéma et détails : [§2.1](modele-bords.md).
 
 **Saturation.** Un pixel saturé ne vaut pas le seuil : il vaut *au moins*
 le seuil. Le traiter comme une mesure exacte crée des artefacts autour
@@ -265,7 +265,7 @@ x = deconvolve(y, None, "blind_optics", sampling=1.0, obscuration=0.3,
 
 `optics_blind_deconvolve` renvoie aussi la PSF et les paramètres estimés,
 et découpe l'image en tuiles si la PSF varie dans le champ
-(`examples/blind_optics.py`, [référence §8.2](reference.md)).
+(`examples/blind_optics.py`, [§8.2](aveugle.md)).
 
 ## 8. Régler les paramètres
 

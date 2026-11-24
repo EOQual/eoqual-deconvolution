@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Banc d'essai d'USRNet (docs/technique/reference.md §7.2, docs/technique/benchmark.md §8) :
+Banc d'essai d'USRNet (docs/technique/plug-and-play.md §7.2, docs/technique/benchmark.md §8) :
 poids publiés (KAIR, appris sur photographies) face aux méthodes du
 paquet, PSF connue, puis sensibilité à une PSF fausse.
 

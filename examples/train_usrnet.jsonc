@@ -1,6 +1,6 @@
 {
   // Réentraînement d'USRNet pour un instrument d'observation de la Terre
-  // (docs/technique/reference.md §7.3). Toutes les plages sont des lois uniformes.
+  // (docs/technique/plug-and-play.md §7.3). Toutes les plages sont des lois uniformes.
 
   // Préparation des images nettes (orthophotographies RVB 8 bits encodées sRGB).
   "images": {

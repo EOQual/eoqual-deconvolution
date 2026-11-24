@@ -8,7 +8,7 @@ Le réseau (architecture, poids, inférence sur un domaine périodique dans
 [0, 1]) est dans ``eoqual.neural.unrolled.usrnet``. Ce module n'en garde que
 ce qui relève de la déconvolution : traitement des bords, pixels masqués ou
 saturés, mise à l'échelle depuis les unités du capteur, estimation de σ
-(docs/technique/reference.md §7.2).
+(docs/technique/plug-and-play.md §7.2).
 """
 from __future__ import annotations
 
@@ -85,7 +85,7 @@ def usrnet_deconvolve(
     asymétrique (bougé) et ses défauts sont amplifiés aux zéros de la FTM ;
     compléter la marge à chaque itération, comme le Plug-and-Play (§7.1),
     diverge, les estimées intermédiaires d'un réseau déplié n'étant pas des
-    images (docs/technique/reference.md §7.2).
+    images (docs/technique/plug-and-play.md §7.2).
 
     Parameters
     ----------

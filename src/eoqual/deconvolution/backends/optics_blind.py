@@ -9,7 +9,7 @@ diffraction d'une pupille connue, quelques aberrations de Zernike
 plausibles** — dont on estime seulement les paramètres libres, puis
 l'image est restaurée avec la PSF estimée.
 
-Estimation des paramètres ``θ`` (docs/technique/reference.md §8.2) :
+Estimation des paramètres ``θ`` (docs/technique/aveugle.md §8.2) :
 
 - ``"evidence"`` (défaut) : maximum de vraisemblance **marginale**
   ``p(y | θ)``, la scène étant intégrée sous un a priori gaussien

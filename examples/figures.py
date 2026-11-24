@@ -5,11 +5,11 @@ Schémas de la documentation, régénérables :
 
     python examples/figures.py          # écrit docs/technique/figures/*.png
 
-- ``boundary_modes.png`` (docs/technique/reference.md §2.1) : domaine de
+- ``boundary_modes.png`` (docs/technique/modele-bords.md §2.1) : domaine de
   travail périodique des modes ``boundary="reflect"`` et
   ``boundary="unknown"`` — image observée (données connues) et marge
   (données inventées par miroir, ou inconnues).
-- ``optical_psfs.png`` (docs/technique/reference.md §8.2) : PSF du modèle
+- ``optical_psfs.png`` (docs/technique/aveugle.md §8.2) : PSF du modèle
   optique de ``blind_optics`` (diffraction, défocalisation, astigmatisme,
   coma, jitter) et coupes de leur FTM sous la borne de diffraction.
 

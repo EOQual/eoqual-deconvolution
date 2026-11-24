@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Réentraînement (réglage fin) d'USRNet sur des PSF d'instrument
-(docs/technique/reference.md §7.3), puis évaluation sur une zone disjointe.
+(docs/technique/plug-and-play.md §7.3), puis évaluation sur une zone disjointe.
 
     python examples/train_usrnet.py --config examples/train_usrnet.jsonc \\
         --train ortho1.tif ortho2.tif --val ortho_val.tif [--out DIR]

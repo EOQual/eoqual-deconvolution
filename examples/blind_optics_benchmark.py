@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Banc d'essai de ``blind_optics`` (docs/technique/reference.md §8.2,
+Banc d'essai de ``blind_optics`` (docs/technique/aveugle.md §8.2,
 docs/technique/benchmark.md) : PSNR après restauration TV avec la PSF estimée, comparé à
 la vraie PSF, à la PSF nominale (sans aberration) et à ``blind_l0``.
 

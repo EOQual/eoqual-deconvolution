@@ -8,7 +8,7 @@ Collection de méthodes de déconvolution d'images, pensée pour
 l'observation de la Terre : PSF connue (méthodes linéaires, itératives,
 variationnelles, Plug-and-Play) ou estimée (déconvolution aveugle),
 traitement des bords, réglage automatique des paramètres. Voir
-**[référence technique](docs/technique/reference.md)** pour le détail de
+**[référence technique](docs/technique/index.md)** pour le détail de
 chaque méthode (principe, implémentation, limites),
 **[tutoriel](docs/technique/tutoriel.md)** pour une progression pas à pas, du modèle
 direct au Plug-and-Play et aux données réelles,
@@ -181,7 +181,7 @@ les pixels manquants (`mask=`) est indispensable sur données réelles.
   `psf.center_psf` recentre une PSF mesurée).
 - **Bords** (`boundary=`) : `"unknown"` (la scène est cherchée sur un
   domaine plus grand que l'image et seule l'image est imposée ; la marge,
-  inconnue, est jetée à la fin — schéma : [référence technique](docs/technique/reference.md) §2.1 ;
+  inconnue, est jetée à la fin — schéma : [référence technique](docs/technique/modele-bords.md) §2.1 ;
   défaut de `wiener`, `tikhonov`, `fista_wavelet`, `tv_primal_dual`),
   `"reflect"` (prolongement miroir continu et périodique ; défaut des
   autres méthodes), `"perdecomp"` (décomposition périodique + lisse),
@@ -189,7 +189,7 @@ les pixels manquants (`mask=`) est indispensable sur données réelles.
 - **Données incomplètes** : `mask=` (pixels valides à `True` ; les NaN
   sont alors acceptés) et `saturation=` (seuil : attache aux données
   unilatérale) pour toutes les méthodes sauf `wiener_unsupervised` et
-  `blind_l0` ([référence technique](docs/technique/reference.md) §2.2).
+  `blind_l0` ([référence technique](docs/technique/modele-bords.md) §2.2).
 - **Paramètres sans dimension ou en multiples de σ** : les résultats ne
   dépendent pas des unités de l'image (8 bits, 12 bits, réflectance),
   vérifié par test.

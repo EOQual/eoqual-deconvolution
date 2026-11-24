@@ -184,7 +184,7 @@ def pnp_hqs_deconvolve(
         données de la marge par ``H·z`` (la marge n'est pas une image
         floue par la PSF). Indispensable pour une PSF à zéros (bougé,
         +5 dB) ; coûte 0.5 à 1 dB sur un flou gaussien ou une
-        défocalisation (docs/technique/reference.md §7).
+        défocalisation (docs/technique/plug-and-play.md §7).
     boundary : str, default "reflect"
     mask : np.ndarray of bool, optional
         Pixels valides (``True``) ; les autres (et les NaN) sont inconnus.
