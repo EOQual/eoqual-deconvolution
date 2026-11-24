@@ -173,7 +173,7 @@ def pnp_hqs_deconvolve(
     sigma_start : float, default 0.05
         Niveau initial du débruiteur, en fraction de la dynamique. 0.05 :
         meilleur compromis mesuré (+1.2 dB en moyenne sur 0.2, jusqu'à
-        +6 dB sur flou de bougé ; BENCHMARK.md) ; 0.2 (Zhang et al. 2021)
+        +6 dB sur flou de bougé ; docs/technique/benchmark.md) ; 0.2 (Zhang et al. 2021)
         convient mieux à un bruit fort.
     sigma_min : float, default 0.002
         Plancher du niveau final (fraction de la dynamique), pour une
@@ -184,7 +184,7 @@ def pnp_hqs_deconvolve(
         données de la marge par ``H·z`` (la marge n'est pas une image
         floue par la PSF). Indispensable pour une PSF à zéros (bougé,
         +5 dB) ; coûte 0.5 à 1 dB sur un flou gaussien ou une
-        défocalisation (REFERENCE_TECHNIQUE.md §7).
+        défocalisation (docs/technique/reference.md §7).
     boundary : str, default "reflect"
     mask : np.ndarray of bool, optional
         Pixels valides (``True``) ; les autres (et les NaN) sont inconnus.

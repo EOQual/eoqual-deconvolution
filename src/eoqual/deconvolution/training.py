@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Réentraînement et ajustement fin d'USRNet pour la déconvolution
-(REFERENCE_TECHNIQUE.md §7.3).
+(docs/technique/reference.md §7.3).
 
 Ce module porte la **physique de la tâche** : lois des PSF d'instrument et
 du bruit, découpe des vignettes, bords réels complétés comme à l'usage. Le

@@ -15,7 +15,7 @@ licence, au regard de la licence MIT d'`eoqual-deconvolution`
 **Principe** : **aucun code tiers n'est copié dans ce dépôt.** Toutes
 les méthodes sauf `wiener_unsupervised` sont des implémentations
 originales, écrites à partir des publications de
-[BIBLIOGRAPHY.md](BIBLIOGRAPHY.md) ; `wiener_unsupervised` appelle
+[bibliographie](docs/technique/bibliographie.md) ; `wiener_unsupervised` appelle
 scikit-image.
 
 ## 1. Légende
@@ -79,7 +79,7 @@ Une méthode publiée peut être réimplémentée librement à partir de
 l'article ; un code publié ne peut être repris que selon sa licence.
 Les méthodes de ce paquet ont été écrites à partir des seules
 publications citées dans l'en-tête de chaque module et dans
-[BIBLIOGRAPHY.md](BIBLIOGRAPHY.md), sans consulter ni reprendre de code
+[bibliographie](docs/technique/bibliographie.md), sans consulter ni reprendre de code
 tiers. Le filtre de Wiener-Tikhonov et ses critères GCV et L-curve
 reprennent la formulation d'un prototype personnel de l'auteur, publié
 ici sous MIT.
@@ -102,16 +102,16 @@ depuis la publication de KAIR et vérifiés par empreinte
 (`eoqual.neural.weights`). Les outils d'entraînement (`training.py`, et la
 boucle `eoqual.neural.unrolled.training`) sont
 écrits pour ce paquet, depuis l'article et le protocole décrit dans
-REFERENCE_TECHNIQUE.md §7.3.
+[référence technique](docs/technique/reference.md) §7.3.
 
 ### 3.1 Méthodes étudiées, non reprises (vérifié le 2026-11-08)
 
 | Méthode | Code et poids publiés | Licence | Statut |
 |---|---|---|---|
-| DWDN (Dong, Roth & Schiele, NeurIPS 2020) | GitHub `dongjxjx/dwdn` et GitLab du MPI, poids `model_DWDN.pt` | **aucune** (tous droits réservés) | 🔴 ni code ni poids réutilisables ; réimplémentation propre depuis l'article envisagée (REFERENCE_TECHNIQUE.md §12.2.4) |
-| Deep-Blur (Debarnot & Weiss, *Biological Imaging* 2024) | GitHub `pierre-weiss/deepblur` (architecture, générateur de PSF, démo) ; poids sur Hugging Face `pweiss/DeepBlur` ; entraînement non publié | code des auteurs **CC0 1.0** ; fichiers tiers embarqués : `basicblock.py`, `network_unet.py` (KAIR, MIT ; d'après BasicSR, Apache-2.0), `didn_class.py` (sigmanet, Imperial College, MIT), `common.py`, `DownSampler.py` (Deep Image Prior, Apache-2.0, l'auteur demande à être contacté pour un usage commercial) ; **poids CC BY-NC 4.0** | 🟡 code réutilisable (CC0 ; notices des fichiers tiers à conserver, exception au §3 à documenter si repris) ; 🔴 poids non commerciaux, non reprenables ; estimateur appris envisagé (REFERENCE_TECHNIQUE.md §12.2.5). Pas de version DeepInv à ce jour (vérifié le 2026-11-08, DeepInv `e34c06f`) : ni réseau d'identification par Zernike, ni poids, ni code d'entraînement |
+| DWDN (Dong, Roth & Schiele, NeurIPS 2020) | GitHub `dongjxjx/dwdn` et GitLab du MPI, poids `model_DWDN.pt` | **aucune** (tous droits réservés) | 🔴 ni code ni poids réutilisables ; réimplémentation propre depuis l'article envisagée ([référence technique](docs/technique/reference.md) §12.2.4) |
+| Deep-Blur (Debarnot & Weiss, *Biological Imaging* 2024) | GitHub `pierre-weiss/deepblur` (architecture, générateur de PSF, démo) ; poids sur Hugging Face `pweiss/DeepBlur` ; entraînement non publié | code des auteurs **CC0 1.0** ; fichiers tiers embarqués : `basicblock.py`, `network_unet.py` (KAIR, MIT ; d'après BasicSR, Apache-2.0), `didn_class.py` (sigmanet, Imperial College, MIT), `common.py`, `DownSampler.py` (Deep Image Prior, Apache-2.0, l'auteur demande à être contacté pour un usage commercial) ; **poids CC BY-NC 4.0** | 🟡 code réutilisable (CC0 ; notices des fichiers tiers à conserver, exception au §3 à documenter si repris) ; 🔴 poids non commerciaux, non reprenables ; estimateur appris envisagé ([référence technique](docs/technique/reference.md) §12.2.5). Pas de version DeepInv à ce jour (vérifié le 2026-11-08, DeepInv `e34c06f`) : ni réseau d'identification par Zernike, ni poids, ni code d'entraînement |
 | `deepinv.models.KernelIdentificationNetwork` (Carbajal et al. 2023, J-MKPD) | dans DeepInv ; poids Hugging Face `deepinv/kernel_identification` | code DeepInv BSD-3-Clause (« adapté avec la permission de l'auteur », dépôt d'origine `GuillermoCarbajal/J-MKPD` sans licence) ; poids BSD-3-Clause | 🟢 utilisable via l'extra `deep` ; autre méthode que Deep-Blur (noyaux libres et poids variables, flou de bougé), non évaluée pour l'observation de la Terre |
-| ErA (Vo & Park, NeurIPS 2025 COML) | aucun | article CC BY 4.0 | 🟡 réimplémentation propre possible mais article incomplet ; idées transposables sans apprentissage (REFERENCE_TECHNIQUE.md §12.2.6) |
+| ErA (Vo & Park, NeurIPS 2025 COML) | aucun | article CC BY 4.0 | 🟡 réimplémentation propre possible mais article incomplet ; idées transposables sans apprentissage ([référence technique](docs/technique/reference.md) §12.2.6) |
 
 ## 4. Images
 
@@ -119,7 +119,7 @@ Les tests, exemples et benchmarks utilisent l'image « astronaut »
 fournie par scikit-image (NASA, domaine public).
 
 Les bancs d'essai `examples/wiener_hunt_benchmark.py` et
-`examples/blind_optics_benchmark.py` (BENCHMARK.md §6-7) utilisent en
+`examples/blind_optics_benchmark.py` ([benchmark](docs/technique/benchmark.md) §6-7) utilisent en
 outre, si on la leur fournit, un extrait de l'**Orthophotoplan 2024** de
 Toulouse Métropole, © Toulouse Métropole, **Licence Ouverte 2.0**
 (Etalab) —

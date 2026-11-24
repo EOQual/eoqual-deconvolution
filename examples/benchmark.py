@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Benchmark des méthodes (tableaux de BENCHMARK.md).
+Benchmark des méthodes (tableaux de docs/technique/benchmark.md).
 
 - image : « astronaut » 512×512 en niveaux de gris, dynamique [0, 1]
   (NASA, domaine public, fournie par scikit-image) ;

@@ -3,7 +3,7 @@
 Publications à partir desquelles les méthodes ont été implémentées, et
 références des choix de conception. Aucun code tiers n'a été consulté
 pour écrire les méthodes de ce paquet (voir
-[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) §3).
+[THIRD_PARTY_LICENSES.md](https://github.com/EOQual/eoqual-deconvolution/blob/main/THIRD_PARTY_LICENSES.md) §3).
 
 ## Méthodes linéaires
 
@@ -71,7 +71,7 @@ pour écrire les méthodes de ce paquet (voir
   *IMA J. Numer. Anal.* 8(1), 141-148, 1988. — `landweber(acceleration=True)`.
 - S. Bonettini, R. Zanella, L. Zanni, "A scaled gradient projection
   method for constrained image deblurring", *Inverse Problems* 25(1),
-  015002, 2009. — piste pour Richardson-Lucy (REFERENCE_TECHNIQUE.md §12).
+  015002, 2009. — piste pour Richardson-Lucy ([référence §12](reference.md)).
 
 ## Méthodes variationnelles
 
@@ -138,8 +138,7 @@ pour écrire les méthodes de ce paquet (voir
   is in the details", *CVPR*, 2014. — approche multi-échelle.
 - J. Bolte, S. Sabach, M. Teboulle, "Proximal alternating linearized
   minimization for nonconvex and nonsmooth problems", *Math. Program.*
-  146, 459-494, 2014. — PALM (essayé et écarté, REFERENCE_TECHNIQUE.md
-  annexe A).
+  146, 459-494, 2014. — PALM (essayé et écarté, [référence §13](reference.md#13-variantes-écartées)).
 - J. Duchi, S. Shalev-Shwartz, Y. Singer, T. Chandra, "Efficient
   projections onto the ℓ1-ball for learning in high dimensions", *ICML*,
   2008. — projection sur le simplexe.
@@ -185,7 +184,7 @@ pour écrire les méthodes de ce paquet (voir
 - D. Wulich, N. S. Kopeika, "Image resolution limits resulting from
   mechanical vibrations", *Optical Engineering* 26(6), 529-533, 1987. —
   FTM d'un mouvement linéaire, d'une vibration sinusoïdale et d'une
-  vibration aléatoire ; jitter et filé (REFERENCE_TECHNIQUE.md §10.1).
+  vibration aléatoire ; jitter et filé ([référence §10.1](reference.md)).
 - R. D. Fiete, *Modeling the Imaging Chain of Digital Cameras*, SPIE
   Press, 2010. — FTM du jitter et du filé dans la chaîne image d'un
   satellite d'observation.
@@ -210,7 +209,7 @@ pour écrire les méthodes de ce paquet (voir
   convex optimization", *JMLR* 17(83), 1-5, 2016. — solution de référence
   de `tests/test_reference_cvxpy.py`.
 
-## Pistes (REFERENCE_TECHNIQUE.md §12)
+## Pistes ([référence §12](reference.md#12-pistes))
 
 - Y. Zhu, K. Zhang, J. Liang, J. Cao, B. Wen, R. Timofte, L. Van Gool,
   "Denoising diffusion models for plug-and-play image restoration",
@@ -222,13 +221,13 @@ pour écrire les méthodes de ce paquet (voir
   deep learning for image deblurring", *NeurIPS* 33, 1048-1059, 2020 ;
   extension « DWDN: Deep Wiener deconvolution network for non-blind image
   deblurring », arXiv:2103.09962. — DWDN (code sans licence : à
-  réimplémenter depuis l'article, REFERENCE_TECHNIQUE.md §12).
+  réimplémenter depuis l'article, [référence §12](reference.md)).
 - V. Debarnot, P. Weiss, "Deep-blur: Blind identification and deblurring
   with convolutional neural networks", *Biological Imaging* 4, e13, 2024,
   doi:10.1017/S2633903X24000096 (CC BY 4.0) ; code
   ``pierre-weiss/deepblur`` (CC0 1.0), poids ``pweiss/DeepBlur`` (CC BY-NC
   4.0). — Deep-Blur, estimateur appris envisagé pour ``blind_optics``
-  (REFERENCE_TECHNIQUE.md §12).
+  ([référence §12](reference.md)).
 - G. Carbajal, P. Vitoria, J. Lezama, P. Musé, "Blind motion deblurring
   with pixel-wise kernel estimation via kernel prediction networks",
   *IEEE Trans. Computational Imaging* 9, 928-943, 2023. —
@@ -236,7 +235,7 @@ pour écrire les méthodes de ce paquet (voir
   confondre avec Deep-Blur).
 - T. Vo, C. Y. Park, "ErA: Error-aware deep unrolling network for single
   image defocus deblurring", *NeurIPS 2025 Workshop COML*, arXiv:2606.06540
-  (CC BY 4.0). — ErA (pas de code publié, REFERENCE_TECHNIQUE.md §12).
+  (CC BY 4.0). — ErA (pas de code publié, [référence §12](reference.md)).
 - H. Ji, K. Wang, "Robust image deblurring with an inaccurate blur
   kernel", *IEEE TIP* 21(4), 1624-1634, 2012. — terme d'erreur
   parcimonieux pour une PSF inexacte.
@@ -256,7 +255,7 @@ pour écrire les méthodes de ce paquet (voir
 ## Pour aller plus loin (cours et tutoriels)
 
 Ressources publiques qui ont guidé la progression de
-[TUTORIEL.md](TUTORIEL.md) ; aucun contenu n'en est repris.
+[tutoriel](tutoriel.md) ; aucun contenu n'en est repris.
 
 - C. Chaux, TP « Méthodes variationnelles pour l'imagerie », École
   GEOMDATA 2018 — https://www.i2m.univ-amu.fr/~caroline.chaux/enseignements.html

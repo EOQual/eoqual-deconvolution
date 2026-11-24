@@ -11,7 +11,7 @@ Chaque entrée décrit :
 - ``restriction`` : restriction d'usage à connaître (``None`` si aucune
   au-delà de la conservation des notices) ;
 - ``reference`` : référence bibliographique courte (complète dans
-  ``BIBLIOGRAPHY.md``).
+  ``docs/technique/bibliographie.md``).
 """
 
 from collections import OrderedDict

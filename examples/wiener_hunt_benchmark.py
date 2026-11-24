@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Banc d'essai de ``wiener_hunt`` (REFERENCE_TECHNIQUE.md §3.5,
-BENCHMARK.md §6) face aux autres méthodes linéaires, PSF connue.
+Banc d'essai de ``wiener_hunt`` (docs/technique/reference.md §3.5,
+docs/technique/benchmark.md §6) face aux autres méthodes linéaires, PSF connue.
 
     python examples/wiener_hunt_benchmark.py [IMAGE.tif]
 

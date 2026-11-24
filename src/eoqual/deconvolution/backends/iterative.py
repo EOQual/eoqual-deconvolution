@@ -49,7 +49,7 @@ def richardson_lucy_deconvolve(
         régularisation, trop d'itérations amplifient le bruit
         (semi-convergence). Avec ``tv_weight`` (défaut), la TV stabilise
         les itérations et 50 itérations accélérées sont le meilleur
-        compromis sur quatre flous et trois niveaux de bruit (BENCHMARK.md).
+        compromis sur quatre flous et trois niveaux de bruit (docs/technique/benchmark.md).
     acceleration : bool, default True
         Extrapolation vectorielle de Biggs & Andrews (1997), ordre 1 :
         résultat comparable en 3 à 5 fois moins d'itérations.
@@ -144,7 +144,7 @@ def landweber_deconvolve(
         Pas de Barzilai & Borwein (1988) : ``τ_k = ‖s‖² / ‖Hs‖²``,
         ``s = x_k − x_{k−1}`` (pas exact du quotient de Rayleigh inverse pour
         une attache quadratique), borné à ``[0.5, 50] / max|H|²``. Atteint
-        la discrépance en beaucoup moins d'itérations (BENCHMARK.md).
+        la discrépance en beaucoup moins d'itérations (docs/technique/benchmark.md).
     boundary : str, default "reflect"
     mask : np.ndarray of bool, optional
         Pixels valides (``True``) ; les autres (et les NaN) sont inconnus.

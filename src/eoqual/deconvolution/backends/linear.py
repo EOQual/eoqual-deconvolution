@@ -50,7 +50,7 @@ def inverse_deconvolve(
     ----------
     threshold : float, default 0.15
         Seuil sur ``|H|`` (``H(0) = 1``), dans ]0, 1] ; 0.15 maximise le
-        PSNR moyen sur quatre flous et trois niveaux de bruit (BENCHMARK.md).
+        PSNR moyen sur quatre flous et trois niveaux de bruit (docs/technique/benchmark.md).
     boundary : str, default "reflect"
         Traitement des bords (:mod:`eoqual.deconvolution.operators`).
     mask : np.ndarray of bool, optional
@@ -163,7 +163,7 @@ def wiener_deconvolve(
     boundary : str, default "unknown"
         Marge inconnue (:mod:`eoqual.deconvolution.operators`) : +0.8 à
         +2.2 dB sur un flou à OTF nulle par endroits (bougé), neutre
-        ailleurs (BENCHMARK.md).
+        ailleurs (docs/technique/benchmark.md).
     mask : np.ndarray of bool, optional
         Pixels valides (``True``) ; les autres (et les NaN) sont inconnus.
     saturation : float, optional
@@ -362,7 +362,7 @@ def tikhonov_deconvolve(
     boundary : str, default "unknown"
         Marge inconnue (:mod:`eoqual.deconvolution.operators`) : +0.8 à
         +2.2 dB sur un flou à OTF nulle par endroits (bougé), neutre
-        ailleurs (BENCHMARK.md).
+        ailleurs (docs/technique/benchmark.md).
     mask : np.ndarray of bool, optional
         Pixels valides (``True``) ; les autres (et les NaN) sont inconnus.
     saturation : float, optional

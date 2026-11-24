@@ -27,7 +27,7 @@ def test_gcv_close_to_oracle(reg, scene, blurred, psf):
 
 
 def test_identity_gcv_underregularizes_discrepancy_fits(scene, blurred, psf):
-    # Constat documenté (REFERENCE_TECHNIQUE.md §5.1) : avec L = I, GCV sous-régularise
+    # Constat documenté (docs/technique/reference.md §5.1) : avec L = I, GCV sous-régularise
     # (spectre de l'image loin d'être plat) ; la discrépance est alors proche de l'optimum.
     _, score_o = _oracle_lambda(scene, blurred, psf, "identity")
     gcv = psnr(scene, deconvolve(blurred, psf, "tikhonov", regularizer="identity"))

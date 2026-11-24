@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Tutoriel pas à pas (TUTORIEL.md) : chaque étape affiche les chiffres
+Tutoriel pas à pas (docs/technique/tutoriel.md) : chaque étape affiche les chiffres
 cités dans le texte et enregistre ses figures HTML dans
 ``examples/output/tutorial_*.html``.
 

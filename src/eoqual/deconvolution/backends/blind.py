@@ -24,7 +24,7 @@ L'image finale est restaurée en non aveugle avec la PSF estimée
 La minimisation alternée directe ``min_{x,h} ‖h ∗ x − y‖² + λTV(x)``
 (PALM) a été essayée et écartée : elle converge vers la solution
 triviale (``h`` = Dirac, ``x = y``) ou vers une PSF décalée selon λ
-(REFERENCE_TECHNIQUE.md, annexe A).
+(docs/technique/reference.md, §13).
 """
 from __future__ import annotations
 
@@ -133,7 +133,7 @@ def blind_deconvolve(
         Côté (impair) du support de la PSF à estimer : le prendre proche de
         l'étendue attendue du flou. Un support **trop grand** dégrade
         fortement le résultat (le surplus capte du bruit) ; un support un
-        peu trop petit est bien mieux toléré (BENCHMARK.md).
+        peu trop petit est bien mieux toléré (docs/technique/benchmark.md).
     sigma : float, optional
         Écart-type du bruit (unités de l'image) pour la restauration
         finale ; ``None`` : estimé.

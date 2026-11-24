@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Déconvolution aveugle contrainte par l'optique (REFERENCE_TECHNIQUE.md
+Déconvolution aveugle contrainte par l'optique (docs/technique/reference.md
 §8.2) sur un instrument simulé dont la PSF varie dans le champ.
 
 Instrument : pupille annulaire (obturation 0.3), Q = λf/(Dp) = 1 (cas

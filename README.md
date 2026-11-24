@@ -8,13 +8,13 @@ Collection de méthodes de déconvolution d'images, pensée pour
 l'observation de la Terre : PSF connue (méthodes linéaires, itératives,
 variationnelles, Plug-and-Play) ou estimée (déconvolution aveugle),
 traitement des bords, réglage automatique des paramètres. Voir
-**[REFERENCE_TECHNIQUE.md](REFERENCE_TECHNIQUE.md)** pour le détail de
+**[référence technique](docs/technique/reference.md)** pour le détail de
 chaque méthode (principe, implémentation, limites),
-**[TUTORIEL.md](TUTORIEL.md)** pour une progression pas à pas, du modèle
+**[tutoriel](docs/technique/tutoriel.md)** pour une progression pas à pas, du modèle
 direct au Plug-and-Play et aux données réelles,
-**[BENCHMARK.md](BENCHMARK.md)** pour la comparaison chiffrée,
+**[benchmark](docs/technique/benchmark.md)** pour la comparaison chiffrée,
 **[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)** pour l'audit des
-licences et **[BIBLIOGRAPHY.md](BIBLIOGRAPHY.md)** pour les publications
+licences et **[bibliographie](docs/technique/bibliographie.md)** pour les publications
 de référence.
 
 ## Sommaire
@@ -121,14 +121,14 @@ Exemples prêts à l'emploi dans `examples/` :
 | Script | Usage |
 |---|---|
 | `quickstart.py` | simuler, déconvoluer avec quatre méthodes, figure comparative |
-| `tutorial.py` | chiffres et figures de [TUTORIEL.md](TUTORIEL.md) |
+| `tutorial.py` | chiffres et figures de [tutoriel](docs/technique/tutoriel.md) |
 | `tuning.py` | GCV, discrépance, optimisation avec et sans référence |
 | `blind.py` | déconvolution aveugle d'un flou de bougé |
 | `blind_optics.py` | déconvolution aveugle contrainte par l'optique, PSF variable dans le champ |
-| `blind_optics_benchmark.py`, `wiener_hunt_benchmark.py`, `usrnet_benchmark.py` | tableaux §6-8 de `BENCHMARK.md` |
+| `blind_optics_benchmark.py`, `wiener_hunt_benchmark.py`, `usrnet_benchmark.py` | tableaux §6-8 de [benchmark](docs/technique/benchmark.md) |
 | `train_usrnet.py` (+ `train_usrnet.jsonc`) | réentraînement d'USRNet sur des PSF d'instrument |
 | `figures.py` | schémas PNG de la référence technique |
-| `benchmark.py` | tableaux de `BENCHMARK.md` |
+| `benchmark.py` | tableaux de [benchmark](docs/technique/benchmark.md) |
 
 ---
 
@@ -157,7 +157,7 @@ scikit-image, et `usrnet`, dont l'architecture reprend celle de KAIR, MIT,
 pour charger ses poids : THIRD_PARTY_LICENSES.md §3.2).
 
 Résultats indicatifs (PSNR, image d'évaluation 512×256, bruit 0.01,
-réglages par défaut ; détail dans [BENCHMARK.md](BENCHMARK.md)) :
+réglages par défaut ; détail dans [benchmark](docs/technique/benchmark.md)) :
 `tv_primal_dual` est le meilleur compromis du socle (+4.5 à +6.9 dB sur
 l'image observée, 2 s) ; `pnp_admm` gagne encore 0.5 à 2.4 dB, au prix
 d'un temps de calcul 10 fois plus long ; les méthodes linéaires sont
@@ -181,7 +181,7 @@ les pixels manquants (`mask=`) est indispensable sur données réelles.
   `psf.center_psf` recentre une PSF mesurée).
 - **Bords** (`boundary=`) : `"unknown"` (la scène est cherchée sur un
   domaine plus grand que l'image et seule l'image est imposée ; la marge,
-  inconnue, est jetée à la fin — schéma : REFERENCE_TECHNIQUE.md §2.1 ;
+  inconnue, est jetée à la fin — schéma : [référence technique](docs/technique/reference.md) §2.1 ;
   défaut de `wiener`, `tikhonov`, `fista_wavelet`, `tv_primal_dual`),
   `"reflect"` (prolongement miroir continu et périodique ; défaut des
   autres méthodes), `"perdecomp"` (décomposition périodique + lisse),
@@ -189,7 +189,7 @@ les pixels manquants (`mask=`) est indispensable sur données réelles.
 - **Données incomplètes** : `mask=` (pixels valides à `True` ; les NaN
   sont alors acceptés) et `saturation=` (seuil : attache aux données
   unilatérale) pour toutes les méthodes sauf `wiener_unsupervised` et
-  `blind_l0` (REFERENCE_TECHNIQUE.md §2.2).
+  `blind_l0` ([référence technique](docs/technique/reference.md) §2.2).
 - **Paramètres sans dimension ou en multiples de σ** : les résultats ne
   dépendent pas des unités de l'image (8 bits, 12 bits, réflectance),
   vérifié par test.

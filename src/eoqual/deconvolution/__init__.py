@@ -9,7 +9,7 @@ ou estimée, pensées pour l'observation de la Terre.
 >>> blurred = simulate_observation(scene, psf, sigma=0.01, seed=0)
 >>> restored = deconvolve(blurred, psf, "tv_primal_dual", sigma=0.01)
 
-Voir ``README.md`` et ``REFERENCE_TECHNIQUE.md``.
+Voir ``README.md`` et ``docs/technique/reference.md``.
 """
 
 __version__ = "0.6.6"

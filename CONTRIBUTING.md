@@ -16,7 +16,7 @@ Ouvrez une issue avec :
 
 Ouvrez une issue décrivant la méthode (nom, référence bibliographique,
 ce qu'elle apporte par rapport au catalogue — voir
-`REFERENCE_TECHNIQUE.md`). Pas besoin de savoir l'implémenter pour la
+[référence technique](docs/technique/reference.md)). Pas besoin de savoir l'implémenter pour la
 proposer.
 
 ## Implémenter une méthode
@@ -28,10 +28,10 @@ dans `src/eoqual/deconvolution/backends/`, qui prépare le problème par
 `sigma` dans les unités de l'image, donne ses paramètres sans dimension
 ou en multiples de σ, accepte `mask=` et `saturation=` (en passant son
 attache aux données par `Problem.fill` / `Problem.gradient_data`, voir
-`REFERENCE_TECHNIQUE.md` §2.2) ou les refuse explicitement, et n'a **pas de paramètre nommé `method`**
+[référence technique](docs/technique/reference.md) §2.2) ou les refuse explicitement, et n'a **pas de paramètre nommé `method`**
 (réservé au dispatcher). Elle est déclarée dans
 `config.py::METHODS_CONFIGS` et `runner.py::_DISPATCH`, sa référence est
-ajoutée à `BIBLIOGRAPHY.md`, et ses paramètres réglables reçoivent un
+ajoutée à [bibliographie](docs/technique/bibliographie.md), et ses paramètres réglables reçoivent un
 espace de recherche `tuning/spaces/<méthode>.jsonc`.
 
 Une brique qui sert à deux modules EOQual au moins va dans eoqual-core
@@ -62,11 +62,19 @@ connus) :
 - les tests longs portent le marqueur `slow` (`pytest -m "not slow"`
   pour une passe rapide), ceux de l'extra `deep` le marqueur `deep`.
 
-Mettre à jour `BENCHMARK.md` avec `examples/benchmark.py --optimize`.
+Mettre à jour [benchmark](docs/technique/benchmark.md) avec `examples/benchmark.py --optimize`.
 
 ## Documentation
 
 Toute méthode nouvelle ou modifiée doit rester reflétée dans `README.md`
-(catalogue), `REFERENCE_TECHNIQUE.md` (principe, implémentation,
-limites), `THIRD_PARTY_LICENSES.md` (licence) et `BIBLIOGRAPHY.md`
+(catalogue), [référence technique](docs/technique/reference.md) (principe, implémentation,
+limites), `THIRD_PARTY_LICENSES.md` (licence) et [bibliographie](docs/technique/bibliographie.md)
 (référence).
+
+## Documentation technique
+
+Les documents de `docs/technique/` décrivent l'état présent, sans dates ni
+numéros de version : ce qui change d'une version à l'autre va dans
+`CHANGELOG.md`, et une variante de méthode écartée se décrit au présent,
+dans la section « Variantes écartées » (ou « Choix de conception ») du
+document. Construction locale du site : `make html` dans `docs/`.

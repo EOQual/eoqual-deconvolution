@@ -26,7 +26,7 @@ def test_blind_recovers_psf(big_scene, truth):
     delta = np.zeros((15, 15))
     delta[7, 7] = 1.0
     assert np.abs(h - truth).sum() < 0.7 * np.abs(delta - truth).sum()
-    assert gain_db(big_scene, y, x) > 0.3  # gain modeste mais positif (BENCHMARK.md)
+    assert gain_db(big_scene, y, x) > 0.3  # gain modeste mais positif (docs/technique/benchmark.md)
 
 
 def test_blind_runner_signature(blurred, psf):

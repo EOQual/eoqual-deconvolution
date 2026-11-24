@@ -8,8 +8,8 @@ interactives correspondantes (`examples/output/tutorial_*.html`).
 
 Scène : « astronaut » (NASA, domaine public, scikit-image), 256×256 en
 niveaux de gris, dynamique [0, 1] ; bruit gaussien σ = 0.01.
-Détails de chaque méthode : [REFERENCE_TECHNIQUE.md](REFERENCE_TECHNIQUE.md) ;
-comparaison chiffrée complète : [BENCHMARK.md](BENCHMARK.md).
+Détails de chaque méthode : [référence technique](reference.md) ;
+comparaison chiffrée complète : [benchmark](benchmark.md).
 
 ## Sommaire
 
@@ -92,7 +92,7 @@ Le paramètre de régularisation se choisit sans image de référence :
 validation croisée généralisée (GCV) ou principe de discrépance (le
 résidu doit valoir le bruit). `plotting.plot_gcv` trace les deux
 critères. GCV est le meilleur ici ; la discrépance est plus sûre sur un
-flou de bougé (BENCHMARK.md).
+flou de bougé ([benchmark](benchmark.md)).
 
 **Wiener–Hunt** (`"wiener_hunt"`) va plus loin : il traite la scène et
 le bruit comme aléatoires (scène gaussienne « lisse », bruit blanc) et
@@ -177,7 +177,7 @@ deconvolve(y, psf, "pnp_hqs", sigma=0.01, denoiser="drunet")   # extra "deep"
 
 Sur l'image du benchmark (512×256, quatre flous), le Plug-and-Play
 gagne 0.5 à 2.4 dB sur la TV avec NL-Ridge (`pnp_admm`), et encore 1.3 à 2.9 dB avec
-DRUNet (BENCHMARK.md, REFERENCE_TECHNIQUE.md §7). Tout
+DRUNet ([benchmark](benchmark.md), [référence §7](reference.md)). Tout
 débruiteur d'eoqual-denoising convient (`nl_means`, `bilateral`,
 `nl_bayes`...) ; vérifier sa licence (THIRD_PARTY_LICENSES.md).
 
@@ -197,7 +197,7 @@ Sur 24 cas (deux scènes, quatre flous, trois bruits), il gagne 1.3 dB en
 moyenne sur `pnp_hqs` et 2.4 dB sur la TV, en une demi-seconde. Ses poids
 publiés ont été appris sur des photographies ; pour un instrument donné,
 on le **réentraîne** sur ses PSF (`examples/train_usrnet.py`,
-REFERENCE_TECHNIQUE.md §7.3).
+[référence §7.3](reference.md)).
 
 ## 7. Données réelles : bords, saturation, pixels manquants, PSF d'instrument
 
@@ -218,7 +218,7 @@ oblige la solution à les respecter ; `"unknown"` cherche une scène plus
 grande que l'image et n'impose l'accord avec les données que sur l'image
 elle-même. La marge est complétée à chaque itération par le flou de
 l'estimée courante, si bien qu'elle ne tire jamais la solution ; elle est
-jetée à la fin. Schéma et détails : REFERENCE_TECHNIQUE.md §2.1.
+jetée à la fin. Schéma et détails : [référence §2.1.](reference.md)
 
 **Saturation.** Un pixel saturé ne vaut pas le seuil : il vaut *au moins*
 le seuil. Le traiter comme une mesure exacte crée des artefacts autour
@@ -265,12 +265,12 @@ x = deconvolve(y, None, "blind_optics", sampling=1.0, obscuration=0.3,
 
 `optics_blind_deconvolve` renvoie aussi la PSF et les paramètres estimés,
 et découpe l'image en tuiles si la PSF varie dans le champ
-(`examples/blind_optics.py`, REFERENCE_TECHNIQUE.md §8.2).
+(`examples/blind_optics.py`, [référence §8.2](reference.md)).
 
 ## 8. Régler les paramètres
 
 Les réglages par défaut sont des compromis mesurés sur quatre flous
-(BENCHMARK.md). Pour une chaîne donnée (même capteur, même PSF, même
+([benchmark](benchmark.md)). Pour une chaîne donnée (même capteur, même PSF, même
 bruit), l'optimisation bayésienne cherche mieux (extra `optim`) :
 
 ```python
@@ -307,4 +307,4 @@ document (aucun contenu n'en est repris) :
 - Stanford EE367 « Computational Imaging » (Plug-and-Play ADMM, a priori de
   diffusion) — [stanford.edu/class/ee367](https://stanford.edu/class/ee367/).
 
-Références des méthodes : [BIBLIOGRAPHY.md](BIBLIOGRAPHY.md).
+Références des méthodes : [bibliographie](bibliographie.md).
