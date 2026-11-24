@@ -103,7 +103,7 @@ flou d'un bougé, par exemple, n'est pas symétrique : l'incohérence est
 amplifiée par l'inversion, d'autant plus que la FTM a des zéros.
 ``"unknown"`` ne fait aucune hypothèse sur la scène hors champ.
 
-| Flou de bougé, TV ([tutoriel](tutoriel.md), [§7](plug-and-play.md#7-plug-and-play-et-réseaux-dépliés)) | PSNR |
+| Flou de bougé, TV ([tutoriel](tutoriel.md), §7) | PSNR |
 |---|---|
 | ``"periodic"`` (rien) | 18.14 dB |
 | ``"reflect"`` (marge inventée) | 27.67 dB |

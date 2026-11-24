@@ -74,7 +74,7 @@ et réentraînable (§7.3).
 **Implémentation.** Structure et noms de paramètres de KAIR (MIT, © 2019
 Kai Zhang) pour charger les poids publiés, réécrits pour l'API FFT
 complexe actuelle de PyTorch (``torch.rfft`` n'existe plus) ; exception
-documentée dans THIRD_PARTY_LICENSES.md [§3.2](methodes-classiques.md#32-wiener--wiener-spectre-du-signal-ajusté). Poids ``"usrnet"`` (17.0 M
+documentée dans THIRD_PARTY_LICENSES.md §3.2. Poids ``"usrnet"`` (17.0 M
 de paramètres) et ``"usrnet_tiny"`` (0.59 M), téléchargés à la demande
 depuis la publication v1.0 de KAIR et vérifiés par SHA-256
 (``eoqual.neural.weights`` ; cache ``$EOQUAL_WEIGHTS_DIR`` ou

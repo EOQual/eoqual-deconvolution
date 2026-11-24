@@ -140,7 +140,7 @@ poids de RAM, SEN2SR et Satlas.
      Wiener en caractéristiques calculé en Fourier avec l'OTF de la PSF
      (``eoqual.core.kernel.psf2otf``) et les bords de ``operators``
      (marge inconnue) ; architecture et pertes décrites dans un fichier
-     de conception cité dans THIRD_PARTY_LICENSES.md [§3](methodes-classiques.md#3-méthodes-linéaires).
+     de conception cité dans THIRD_PARTY_LICENSES.md §3.
   2. **Données d'entraînement de licence claire**, adaptées à
      l'observation de la Terre : orthophotographies ouvertes (Licence
      Ouverte 2.0, Etalab, réutilisation commerciale permise), réduites et
@@ -200,7 +200,7 @@ poids de RAM, SEN2SR et Satlas.
   (``optical_psf``), les tuiles et la restauration du paquet.
 
   *Licences* (vérifiées le 2026-11-08, détail dans
-  THIRD_PARTY_LICENSES.md [§3.1](methodes-classiques.md#31-inverse--filtre-inverse-tronqué)) : code des auteurs sous **CC0 1.0**
+  THIRD_PARTY_LICENSES.md §3.1) : code des auteurs sous **CC0 1.0**
   (dépôt ``pierre-weiss/deepblur``, publié en janvier 2025), donc
   réutilisable ; fichiers tiers embarqués sous leurs licences d'origine,
   permissives (KAIR et sigmanet : MIT ; BasicSR et Deep Image Prior :
@@ -233,7 +233,7 @@ poids de RAM, SEN2SR et Satlas.
 
   1. **Choisir la voie du code** : réutiliser l'architecture CC0 (avec
      notices des fichiers tiers et une exception documentée à la règle
-     « écrit depuis les seules publications », THIRD_PARTY_LICENSES.md [§3](methodes-classiques.md#3-méthodes-linéaires))
+     « écrit depuis les seules publications », THIRD_PARTY_LICENSES.md §3)
      — la seule voie aujourd'hui, la version DeepInv n'existant pas
      encore ; DeepInv peut toutefois servir à générer les PSF
      d'entraînement, rôle que tient déjà ``optical_psf``.
